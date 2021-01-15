@@ -1,0 +1,94 @@
+.home-header {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.home-header .top-bar {
+    width: 90%;
+    margin: 0 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 1rem 0;
+}
+
+.home-header .top-bar a img {
+    height: 6.6rem;
+    transition: opacity 0.2s;
+}
+.home-header .top-bar a:hover {
+    opacity: 0.7; /*para diminuir a visibilidade do item*/
+}
+
+.home-header .top-bar .avatar img {
+        width: 6rem;
+        height: 6rem;
+        border-radius: 50%;
+}
+
+.home-header .frasse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-header .frasse h1{
+    font-size: 2.2rem;
+    padding-bottom: .8rem;
+}
+/*parte das funções*/
+
+#conteiner .link-page {
+    background: red;
+    margin-top: 2rem;
+    margin-right: 2rem;
+    margin-left: 2rem;
+    border-radius: .8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#conteiner .link-page a h1 {
+    padding: 1rem 0;
+    font-weight: 600;
+    font-size: 2rem;
+    color:white;
+}
+#conteiner .link-page a{
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+#conteiner .link-page a:hover {
+    opacity: 0.6;
+}
+
+fieldset {
+    margin: 2rem;
+    background-color: white;
+    padding: 2rem  4rem;
+    border: none;
+}
+
+
+@media (min-width: 900px){
+    #conteiner .link-page {
+        background: red;
+        margin: 2rem 10rem;
+        border-radius: .8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    fieldset {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin: 2rem 20rem;
+        border-radius: .7rem;
+    }
+}

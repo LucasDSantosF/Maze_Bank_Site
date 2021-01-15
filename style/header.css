@@ -1,0 +1,46 @@
+#page-login #conteiner {
+    width: 100vw;
+    height: 100vh;
+}
+
+.page-header {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-header .top-bar {
+    width: 90%;
+    margin: 0 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 1.6rem 0;
+}
+
+.page-header .top-bar a p{
+    font-weight: 700;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 1.1rem;
+    margin-left: 1.5rem;
+   
+}
+
+.page-header .top-bar a img {
+    height: 6.6rem;
+    transition: opacity 0.2s;
+}
+
+.page-header .top-bar a:hover {
+    opacity: 0.7; /*para diminuir a visibilidade do item*/
+}
+
+.page-header .text-header p{
+    font-weight: 700;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 2rem;
+   margin-left: .8rem;
+   margin-bottom: .5rem;
+}

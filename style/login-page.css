@@ -1,0 +1,64 @@
+footer a{
+    text-decoration: none;
+}
+
+footer a{
+    width: 25rem;
+    height: 5rem;
+
+    border-radius: 1.8rem;
+    margin-right: 1rem;
+    margin-left: 1rem;
+
+    font-weight: 700;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    text-decoration: none;
+    transition: background 0.2s;
+
+    color: black
+}
+
+footer a.login {
+    background: red;
+}
+
+footer a.login:hover {
+    background: rgb(189, 3, 3);
+}
+
+
+
+@media (min-width: 900px) {
+    #page fieldset .input-space {
+
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+
+    }
+    
+
+    #page main footer button {
+        width: 150px;
+        
+    }
+    .input-space #CPF {
+        width: 170px;
+        height: 25px;
+    }
+    .input-space #key {
+        width: 170px;
+        height: 25px;
+    }
+
+    .input-space #name {
+        width: 230px;
+        height: 25px;
+    }
+
+}

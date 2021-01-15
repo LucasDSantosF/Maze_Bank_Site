@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Bank</title>
+
+    <link rel="stylesheet" href="/style/main.css">
+    <link rel="stylesheet" href="/style/form.css">
+    <link rel="stylesheet" href="/style/header.css">
+    <link rel="stylesheet" href="/style/create-page.css">
+    <link rel="shortcut icon" href="/imagens/Maze-Bank-logo.png" type="image/png">
+</head>
+<body id="page">
+    <div id="conteiner">
+        <header class="page-header">
+            <div class="top-bar">
+                <a href="/site.html">
+                    <img src="/imagens/Maze-Bank-logo.png" alt="Maze Bank Logo">
+                </a>
+                <h1>Maze Bank</h1>
+            </div>
+            <div class="text-header">
+                <p>Preencha os campos para criar sua conta.</p>
+            </div>
+        </header>
+        <main>
+            <form action="" id="create-space">
+                <fieldset>
+                    <div class="input-space">
+                        <label for="name">Nome completo :</label>
+                        <input name="name" id="name" required>
+                    </div>
+                    <div class="input-space">
+                        <label for="data">Data de Nascimento :</label>
+                        <input name="data" id="data" type="date" required>
+                    </div>
+                    <div class="select-space">
+                        <label for="UF">UF:</label>
+                        <select name="UF[]" id="UF" required>
+                            <option value="">Selecione uma opção</option>
+                        </select>
+                    </div>
+                    <div class="input-space">
+                        <label for="CPF">CPF :</label>
+                        <input name="CPF" id="CPF" required>
+                    </div>
+                    <div class="input-space">
+                        <label for="identidade">Identidade :</label>
+                        <input name="identidade" id="identidade" required>
+                    </div>
+                </fieldset>
+                <footer>
+                    <a class="create" href="/home-page.html">
+                        Criar conta
+                    </a>
+                </footer>
+            </form>
+        </main>
+
+    </div>
+</body>
+</html>

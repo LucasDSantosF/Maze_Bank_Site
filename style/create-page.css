@@ -1,0 +1,64 @@
+
+.select-space select {
+    width: 20rem;
+    height: 100%;
+    margin: 2rem;
+    border: 1px solid rgb(243, 53, 53);
+    border-radius: .8rem;
+    outline: 0;
+    background-color: rgb(184, 184, 184);
+    font: 1.8rem 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+footer a{
+    width: 25rem;
+    height: 5rem;
+
+    border-radius: 1.8rem;
+    margin-right: 1rem;
+    margin-left: 1rem;
+
+    font-weight: 700;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    text-decoration: none;
+    transition: background 0.2s;
+
+    color: black
+}
+
+footer a.create {
+    background: red;
+}
+
+footer a.create:hover {
+    background: rgb(189, 3, 3);
+}
+
+
+@media (min-width: 900px) {
+
+    #page fieldset .input-space {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    #page fieldset .select-space {
+        display: grid;
+        justify-content: start;
+        grid-template-columns: 1fr 1fr;
+    }
+    .input-space input {
+        height: 25px;
+
+    }
+    .select-space select {
+        height: 25px;
+        width: 200px;
+        justify-content: center;
+    }
+}
