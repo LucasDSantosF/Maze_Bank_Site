@@ -1,0 +1,186 @@
+:root {
+  --background: hsl(0, 0%, 98%);
+  --foreground: hsl(0, 0%, 10%);
+
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(0, 0%, 10%);
+
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(0, 0%, 10%);
+
+  --primary: hsl(0, 72%, 51%);
+  --primary-foreground: hsl(0, 0%, 100%);
+
+  --secondary: hsl(0, 0%, 20%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+
+  --muted: hsl(0, 0%, 94%);
+  --muted-foreground: hsl(0, 0%, 45%);
+
+  --accent: hsl(0, 65%, 45%);
+  --accent-foreground: hsl(0, 0%, 100%);
+
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+
+  --border: hsl(0, 0%, 88%);
+  --input: hsl(0, 0%, 88%);
+  --ring: hsla(0, 72%, 51%, 0.5); /* Adicionado alpha para o ring */
+
+  --radius: 0.75rem;
+
+  /* Custom Maze Bank Colors */
+  --maze-red: hsl(0, 72%, 51%);
+  --maze-red-dark: hsl(0, 72%, 42%);
+  --maze-red-light: hsl(0, 72%, 60%);
+  --maze-gray-dark: hsl(0, 0%, 15%);
+  --maze-gray: hsl(0, 0%, 35%);
+  --maze-gray-light: hsl(0, 0%, 75%);
+  --maze-white: hsl(0, 0%, 98%);
+}
+
+/* Modo Escuro */
+.dark {
+  --background: hsl(0, 0%, 8%);
+  --foreground: hsl(0, 0%, 95%);
+  --card: hsl(0, 0%, 12%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --popover: hsl(0, 0%, 12%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --secondary: hsl(0, 0%, 18%);
+  --secondary-foreground: hsl(0, 0%, 95%);
+  --muted: hsl(0, 0%, 18%);
+  --muted-foreground: hsl(0, 0%, 60%);
+  --destructive: hsl(0, 62%, 30%);
+  --border: hsl(0, 0%, 22%);
+  --input: hsl(0, 0%, 22%);
+}
+
+/* Reset e Base */
+* {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  margin-top: 0;
+}
+
+/* Componentes Maze Bank */
+
+.maze-gradient {
+  background: linear-gradient(135deg, var(--maze-red) 0%, var(--maze-red-dark) 100%);
+}
+
+.maze-text-gradient {
+  background: linear-gradient(135deg, var(--maze-red) 0%, var(--maze-red-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+.maze-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.maze-button {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.maze-button:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: scale(1.02);
+}
+
+.maze-button:active {
+  transform: scale(0.98);
+}
+
+.maze-input {
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: var(--foreground);
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.maze-input:focus {
+  outline: none;
+  /* ring: 2px solid var(--ring); */
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Gradiente para o lado do formulário */
+.maze-gradient {
+  background: linear-gradient(135deg, var(--maze-red) 0%, var(--maze-red-dark) 100%) !important;
+}
+
+/* Container da logo (Círculo Vermelho no fundo Branco) */
+.logo-container-red {
+  width: 180px;
+  height: 180px;
+  background-color: white !important;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Inputs Brancos para o fundo Vermelho */
+.maze-input-inverted {
+  background-color: white !important;
+  border: none !important;
+  color: #333 !important;
+  padding: 0.75rem 1rem;
+}
+
+.maze-input-inverted:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Checkbox branco */
+.custom-checkbox {
+  border: 2px solid white;
+}
+.custom-checkbox:checked {
+  background-color: white;
+  border-color: white;
+}
+
+input::-ms-reveal {
+  display: none !important;
+}
+
+/* Garante que outros navegadores que usem pseudo-elementos similares também escondam */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+}
