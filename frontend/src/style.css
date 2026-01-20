@@ -25,11 +25,10 @@
 
   --border: hsl(0, 0%, 88%);
   --input: hsl(0, 0%, 88%);
-  --ring: hsla(0, 72%, 51%, 0.5); /* Adicionado alpha para o ring */
+  --ring: hsla(0, 72%, 51%, 0.5);
 
   --radius: 0.75rem;
 
-  /* Custom Maze Bank Colors */
   --maze-red: hsl(0, 72%, 51%);
   --maze-red-dark: hsl(0, 72%, 42%);
   --maze-red-light: hsl(0, 72%, 60%);
@@ -39,7 +38,6 @@
   --maze-white: hsl(0, 0%, 98%);
 }
 
-/* Modo Escuro */
 .dark {
   --background: hsl(0, 0%, 8%);
   --foreground: hsl(0, 0%, 95%);
@@ -56,7 +54,6 @@
   --input: hsl(0, 0%, 22%);
 }
 
-/* Reset e Base */
 * {
   box-sizing: border-box;
   border-color: var(--border);
@@ -75,8 +72,6 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   margin-top: 0;
 }
-
-/* Componentes Maze Bank */
 
 .maze-gradient {
   background: linear-gradient(135deg, var(--maze-red) 0%, var(--maze-red-dark) 100%);
@@ -131,16 +126,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .maze-input:focus {
   outline: none;
-  /* ring: 2px solid var(--ring); */
   box-shadow: 0 0 0 2px var(--ring);
 }
 
-/* Gradiente para o lado do formulário */
 .maze-gradient {
   background: linear-gradient(135deg, var(--maze-red) 0%, var(--maze-red-dark) 100%) !important;
 }
 
-/* Container da logo (Círculo Vermelho no fundo Branco) */
 .logo-container-red {
   width: 180px;
   height: 180px;
@@ -152,7 +144,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 auto;
 }
 
-/* Inputs Brancos para o fundo Vermelho */
 .maze-input-inverted {
   background-color: white !important;
   border: none !important;
@@ -164,7 +155,6 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3) !important;
 }
 
-/* Checkbox branco */
 .custom-checkbox {
   border: 2px solid white;
 }
@@ -177,10 +167,70 @@ input::-ms-reveal {
   display: none !important;
 }
 
-/* Garante que outros navegadores que usem pseudo-elementos similares também escondam */
 input::-webkit-contacts-auto-fill-button,
 input::-webkit-credentials-auto-fill-button {
   visibility: hidden;
   display: none !important;
   pointer-events: none;
+}
+
+.maze-gradient {
+  background: linear-gradient(135deg, var(--maze-red) 0%, var(--maze-red-dark) 100%) !important;
+  border-radius: 24px;
+}
+
+.avatar-circle {
+  width: 45px;
+  height: 45px;
+  background-color: var(--maze-red);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.logo-circle-small {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--maze-red);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-saldo {
+  border: none;
+  min-height: 250px;
+}
+
+.text-success-light {
+  color: #2ecc71;
+}
+
+.action-card {
+  transition: all 0.3s ease;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.action-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+}
+
+.icon-box {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
