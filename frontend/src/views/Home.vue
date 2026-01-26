@@ -15,7 +15,7 @@
               {{ iniciaisUser }}
             </div>
             <div class="d-none d-md-block">
-              <p class="m-0 fw-bold small text-dark">{{ user.nome }} {{ user.sobrenome }}</p>
+              <p class="m-0 fw-bold small">{{ user.nome }} {{ user.sobrenome }}</p>
             </div>
           </div>
         </div>
@@ -105,6 +105,17 @@
           </div>
         </div>
       </section>
+      <Pix 
+        ref="pixComponent"
+        @abrirChaves="abrirGerenciarChaves"
+        @abrirExtrato="abrirExtrato"
+        @abrirTransferencia="abrirTransferencia"
+      />
+      <MinhasChaves ref="chavesComponent" />
+      <Transferencia ref="transferenciaComponent" />
+      <Extrato ref="extratoComponent" />
+      <Saque ref="saqueComponent" />
+      <Deposito ref="depositoComponent" />
     </main>
   </div>
 </template>
@@ -113,6 +124,12 @@
 import { useRouter } from 'vue-router';
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas } from 'bootstrap';
+import Pix from '../components/Pix.vue';
+import MinhasChaves from '../components/MinhasChaves.vue';
+import Transferencia from '../components/Transferencia.vue';
+import Extrato from '../components/Extrato.vue';
+import Saque from '../components/Saque.vue';
+import Deposito from '../components/Deposito.vue';
 
 const router = useRouter();
 
@@ -128,6 +145,24 @@ const user = ref({
 
 const isSaldoVisible = ref(false);
 let bsOffcanvas = null;
+const pixComponent = ref(null);
+const chavesComponent = ref(null);
+const transferenciaComponent = ref(null);
+const extratoComponent = ref(null);
+const saqueComponent = ref(null);
+const depositoComponent = ref(null);
+
+const abrirTransferencia = () => {
+    transferenciaComponent.value?.abrirTransferencia();
+};
+
+const abrirExtrato = () => {
+    extratoComponent.value?.abrirExtrato()
+};
+
+const abrirGerenciarChaves = () => {
+  chavesComponent.value?.abrirChaves();
+};
 
 onMounted(() => {
     const el = document.getElementById('sidebarPerfil');
@@ -160,7 +195,21 @@ const acoes = [
 ];
 
 const executarAcao = (acao) => {
-    console.log(`Iniciando ação: ${acao.nome}`);
+    if (acao.nome === 'Pix') {
+        pixComponent.value.abrirPix();
+    };
+    if (acao.nome === 'Transferir') {
+        abrirTransferencia();
+    };
+    if (acao.nome === 'Extrato') {
+        abrirExtrato();
+    };
+    if (acao.nome === 'Saque') {
+        saqueComponent.value?.abrirSaque();
+    };
+    if (acao.nome === 'Depósito') {
+        depositoComponent.value?.abrirDeposito();
+    };
 };
 
 const logout = () => {
@@ -171,107 +220,7 @@ const logout = () => {
 </script>
 
 <style scoped>
-:root {
-  --maze-red: #dc3545;
-  --maze-red-dark: #a71d2a;
-}
-
-.maze-gradient {
-  background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%) !important;
-}
-
-.avatar-circle {
-  width: 45px;
-  height: 45px;
-  background-color: #dc3545;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  user-select: none;
-}
-
-.card-saldo {
-  border: none;
-  min-height: 160px !important;
-  border-radius: 20px;
-}
-
-.action-card {
-  border-radius: 18px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.action-card:hover {
-  transform: translateY(-5px);
-  background-color: #fff;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-}
-
-.icon-box {
-  width: 55px;
-  height: 55px;
-  border-radius: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.small-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 700;
-}
-
 body {
   padding-top: 72px;
-}
-
-.avatar-group-container {
-  cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 30px;
-  transition: background-color 0.2s;
-}
-
-.avatar-group-container:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.avatar-circle {
-  width: 45px;
-  height: 45px;
-  background-color: #dc3545;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  user-select: none;
-
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  border: 2px solid transparent;
-}
-
-.avatar-circle:hover {
-  transform: scale(1.1);
-  background-color: #a71d2a;
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-  border-color: rgba(255, 255, 255, 0.8);
-}
-
-.avatar-circle:active {
-  transform: scale(0.95);
 }
 </style>
