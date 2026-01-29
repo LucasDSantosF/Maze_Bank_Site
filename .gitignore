@@ -1,0 +1,31 @@
+# Python (Caches e Bytecode)
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambiente Virtual
+.venv/
+venv/
+env/
+
+# Configurações Sensíveis (Maze Bank)
+# Bloqueia o .env tanto na raiz quanto dentro de subpastas
+.env
+backend/app/.env
+
+# Banco de Dados local
+*.db
+backend/app/maze_bank.db
+
+# Frontend
+node_modules/
+.next/
+dist/
+build/
+.env.local
+
+# IDEs e Sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
