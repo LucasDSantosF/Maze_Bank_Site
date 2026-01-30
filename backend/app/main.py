@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api import auth, user, pix, extrato, transactions
+from api import auth, user, pix, extrato, transactions, contatos
 from models import models
 from db.database import engine
 
@@ -12,3 +12,4 @@ app.include_router(user.router)
 app.include_router(pix.router)
 app.include_router(extrato.router)
 app.include_router(transactions.router)
+app.include_router(contatos.router)

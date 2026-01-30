@@ -4,6 +4,19 @@ from sqlalchemy.sql import func
 from decimal import Decimal
 from db.database import Base
 
+class Contato(Base):
+    __tablename__ = "contatos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String)
+    cpf = Column(String)
+    chave_pix = Column(String, nullable=True)
+    tipo_chave_pix = Column(String, nullable=True)
+    agencia = Column(String, nullable=True)
+    conta = Column(String, nullable=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
+    dono = relationship("Usuario", back_populates="contatos")
+
 class TransferenciaPendente(Base):
     __tablename__ = "transferencias_pendentes"
     
