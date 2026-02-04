@@ -25,6 +25,7 @@ class TransferenciaPendente(Base):
     tipo_operacao = Column(String)
     remetente_id = Column(Integer)
     recebedor_id = Column(Integer)
+    chave_pix_id = Column(Integer)
     data_expiracao = Column(DateTime)
 
 class Transacao(Base):
@@ -66,4 +67,5 @@ class Usuario(Base):
     data_criacao = Column(DateTime(timezone=True), server_default=func.now())
     minhas_chaves = relationship("ChavePix", back_populates="dono")
     transacoes = relationship("Transacao", back_populates="dono")
+    contatos = relationship("Contato", back_populates="dono")
     refresh_token = Column(String, nullable=True)
