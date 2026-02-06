@@ -17,28 +17,45 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # --- UTILITÁRIOS ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get("access_token")
-    
-    if not token:
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not access_token and not refresh_token:
         raise HTTPException(
-            status_code=401, 
-            detail="Você não está logado (Cookie ausente)"
+            status_code=status.HTTP_204_NO_CONTENT,
+            detail="Nenhum cookie de sessão encontrado"
+        )
+
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Access token ausente"
         )
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         cpf: str = payload.get("sub")
         
         if cpf is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Token inválido"
+            )
             
     except JWTError:
-        raise HTTPException(status_code=401, detail="Sessão expirada")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Sessão expirada"
+        )
 
     usuario = db.query(models.Usuario).filter(models.Usuario.cpf == cpf).first()
+    
     if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Usuário não encontrado"
+        )
     
     return usuario
 
@@ -103,6 +120,7 @@ def login(usuario: Login, response: Response, db: Session = Depends(get_db)):
         httponly=True,
         secure=False,
         samesite="lax",
+        domain=None,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
@@ -112,6 +130,7 @@ def login(usuario: Login, response: Response, db: Session = Depends(get_db)):
         httponly=True,
         secure=False,
         samesite="lax",
+        domain=None,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600
     )
     
@@ -141,6 +160,7 @@ def renovar_acesso(request: Request, response: Response, db: Session = Depends(g
             httponly=True,
             secure=False,
             samesite="lax",
+            domain=None,
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
         
