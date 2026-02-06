@@ -1,5 +1,6 @@
 <template>
-  <div class="min-vh-100 bg-light">
+  <div class="min-vh-100 bg-light" v-if="!isloading">
+    
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2 fixed-top">
       <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="#">
@@ -12,7 +13,7 @@
               class="avatar-circle cursor-pointer" 
               @click="toggleSidebar"
             >
-              {{ iniciaisUser }}
+              {{ user.avatar }}
             </div>
             <div class="d-none d-md-block">
               <p class="m-0 fw-bold small">{{ user.nome }} {{ user.sobrenome }}</p>
@@ -25,7 +26,7 @@
     <div 
       class="offcanvas offcanvas-end border-0 shadow" 
       tabindex="-1" 
-      id="sidebarPerfil" 
+      ref="sidebarRef" 
       aria-labelledby="sidebarPerfilLabel"
     >
       <div class="offcanvas-header bg-danger text-white">
@@ -36,7 +37,7 @@
       <div class="offcanvas-body d-flex flex-column">
         <div class="text-center mb-4">
           <div class="avatar-circle mx-auto mb-2" style="width: 80px; height: 80px; font-size: 2rem;">
-            {{ iniciaisUser }}
+            {{ user.avatar }}
           </div>
           <h5 class="fw-bold mb-0 text-dark">{{ user.nome }} {{ user.sobrenome }}</h5>
         </div>
@@ -65,7 +66,7 @@
         </div>
 
         <div class="mt-auto pt-5">
-          <button @click="logout" class="btn btn-outline-danger w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-bold shadow-sm">
+          <button @click="handleLogout" class="btn btn-outline-danger w-100 py-2 d-flex align-items-center justify-content-center gap-2 fw-bold shadow-sm">
             <i class="bi bi-box-arrow-right"></i> Sair da Conta
           </button>
         </div>
@@ -83,7 +84,7 @@
           <div class="col-md-8">
             <p class="small opacity-75 mb-1">Saldo disponível</p>
             <h2 class="fs-2 fw-bold d-flex align-items-center gap-3 mb-0">
-              <span>{{ isSaldoVisible ? saldoFormatado : 'R$ ••••••••' }}</span>
+              <span>{{ isSaldoVisible ? user.saldo : 'R$ ••••••••' }}</span>
               <i 
                 :class="['bi cursor-pointer opacity-50 fs-4', isSaldoVisible ? 'bi-eye' : 'bi-eye-slash']" 
                 @click="isSaldoVisible = !isSaldoVisible">
@@ -105,12 +106,8 @@
           </div>
         </div>
       </section>
-      <Pix 
-        ref="pixComponent"
-        @abrirChaves="abrirGerenciarChaves"
-        @abrirExtrato="abrirExtrato"
-        @abrirTransferencia="abrirTransferencia"
-      />
+
+      <Pix ref="pixComponent" @abrirChaves="abrirGerenciarChaves" @abrirExtrato="abrirExtrato" @abrirTransferencia="abrirTransferencia" />
       <MinhasChaves ref="chavesComponent" />
       <Transferencia ref="transferenciaComponent" />
       <Extrato ref="extratoComponent" />
@@ -118,33 +115,33 @@
       <Deposito ref="depositoComponent" />
     </main>
   </div>
+
+  <Loading class="min-vh-100 bg-light" v-if="isloading"/>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router';
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { Offcanvas } from 'bootstrap';
-import Pix from '../components/Pix.vue';
-import MinhasChaves from '../components/MinhasChaves.vue';
-import Transferencia from '../components/Transferencia.vue';
-import Extrato from '../components/Extrato.vue';
-import Saque from '../components/Saque.vue';
-import Deposito from '../components/Deposito.vue';
+import { auth } from '../api/models/apis';
+
+// Imports de Componentes
+import Pix from '../components/views/Pix.vue';
+import MinhasChaves from '../components/views/MinhasChaves.vue';
+import Transferencia from '../components/views/Transferencia.vue';
+import Extrato from '../components/views/Extrato.vue';
+import Saque from '../components/views/Saque.vue';
+import Deposito from '../components/views/Deposito.vue';
+import Loading from '../components/loading.vue';
 
 const router = useRouter();
-
-const user = ref({
-    nome: 'Michael',
-    sobrenome: 'De Santa',
-    email: 'michael.ds@maze.com',
-    cpf: '123.456.789-00',
-    agencia: '0001',
-    conta: '12345-6',
-    saldo: 125847.32,
-});
-
+const isloading = ref(true);
+const user = ref({});
 const isSaldoVisible = ref(false);
+
+const sidebarRef = ref(null);
 let bsOffcanvas = null;
+
 const pixComponent = ref(null);
 const chavesComponent = ref(null);
 const transferenciaComponent = ref(null);
@@ -152,39 +149,41 @@ const extratoComponent = ref(null);
 const saqueComponent = ref(null);
 const depositoComponent = ref(null);
 
-const abrirTransferencia = () => {
-    transferenciaComponent.value?.abrirTransferencia();
-};
+onMounted(async () => {
+  await pegarUsuario();
+  isloading.value = false;
 
-const abrirExtrato = () => {
-    extratoComponent.value?.abrirExtrato()
-};
+  await nextTick();
 
-const abrirGerenciarChaves = () => {
-  chavesComponent.value?.abrirChaves();
-};
-
-onMounted(() => {
-    const el = document.getElementById('sidebarPerfil');
-    if (el) {
-        bsOffcanvas = new Offcanvas(el);
-    }
+  if (sidebarRef.value) {
+    bsOffcanvas = new Offcanvas(sidebarRef.value);
+  }
 });
 
-const toggleSidebar = () => {
-    if (bsOffcanvas) bsOffcanvas.show();
-};
-
-const iniciaisUser = computed(() => {
-    return (user.value.nome.charAt(0) + user.value.sobrenome.charAt(0)).toUpperCase();
-});
-
-const saldoFormatado = computed(() => {
-    return user.value.saldo.toLocaleString('pt-BR', {
+async function pegarUsuario() {
+  try {
+    const response = await auth.usuario();
+    user.value = {
+      nome: response.nome,
+      sobrenome: response.sobrenome,
+      avatar: `${response.nome.charAt(0)}${response.sobrenome.charAt(0)}`.toUpperCase(),
+      email: response.email,
+      cpf: response.cpf,
+      agencia: response.detalhes_bancarios.agencia,
+      conta: response.detalhes_bancarios.conta,
+      saldo: response.detalhes_bancarios.saldo.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL',
-    });
-});
+      })
+    };
+  } catch (error) {
+    console.error("Erro ao buscar usuário:", error);
+  }
+}
+
+const toggleSidebar = () => {
+  if (bsOffcanvas) bsOffcanvas.show();
+};
 
 const acoes = [
   { nome: 'Transferir', icon: 'bi-send', colorClass: 'bg-danger text-white' },
@@ -195,32 +194,62 @@ const acoes = [
 ];
 
 const executarAcao = (acao) => {
-    if (acao.nome === 'Pix') {
-        pixComponent.value.abrirPix();
-    };
-    if (acao.nome === 'Transferir') {
-        abrirTransferencia();
-    };
-    if (acao.nome === 'Extrato') {
-        abrirExtrato();
-    };
-    if (acao.nome === 'Saque') {
-        saqueComponent.value?.abrirSaque();
-    };
-    if (acao.nome === 'Depósito') {
-        depositoComponent.value?.abrirDeposito();
-    };
+  if (acao.nome === 'Pix') pixComponent.value?.abrirPix();
+  if (acao.nome === 'Transferir') transferenciaComponent.value?.abrirTransferencia();
+  if (acao.nome === 'Extrato') extratoComponent.value?.abrirExtrato();
+  if (acao.nome === 'Saque') saqueComponent.value?.abrirSaque();
+  if (acao.nome === 'Depósito') depositoComponent.value?.abrirDeposito();
 };
 
-const logout = () => {
-    if (bsOffcanvas) bsOffcanvas.hide();
-    console.log("Saindo da conta...");
-    router.push({name: 'Login'});
+const abrirTransferencia = () => transferenciaComponent.value?.abrirTransferencia();
+const abrirExtrato = () => extratoComponent.value?.abrirExtrato();
+const abrirGerenciarChaves = () => chavesComponent.value?.abrirChaves();
+
+const handleLogout = async () => {
+  if (bsOffcanvas) bsOffcanvas.hide();
+  try {
+    await auth.logout();
+    router.push({ name: 'Login' });
+  } catch (error) {
+    console.log(error)
+  }
 };
 </script>
 
 <style scoped>
-body {
-  padding-top: 72px;
+.avatar-circle {
+  width: 45px;
+  height: 45px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.maze-gradient {
+  background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+}
+
+.action-card {
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.action-card:hover {
+  transform: translateY(-5px);
+}
+
+.icon-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
 }
 </style>
