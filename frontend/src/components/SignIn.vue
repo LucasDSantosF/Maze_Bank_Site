@@ -9,7 +9,8 @@
             <input 
                 type="text"
                 class="form-control maze-input-inverted ps-2"
-                placeholder="seu@email.com"
+                v-mask="'###.###.###-##'"
+                placeholder="000.000.000-00"
                 @input="validar"
                 v-model="login">
         </div>
@@ -47,10 +48,15 @@ const showPassword = ref(false);
 const login = ref('');
 const password = ref('');
 
+function limparApenasDigitos(valor) {
+    if (!valor) return '';
+    return valor.toString().replace(/\D/g, '');
+}
+
 function validar() {
   emit(
     'update:dados', {
-        login: login.value,
+        cpf: limparApenasDigitos(login.value),
         password: password.value,
     }
   );

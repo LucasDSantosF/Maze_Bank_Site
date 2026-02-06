@@ -262,3 +262,6 @@ input::-webkit-credentials-auto-fill-button {
   letter-spacing: 0.5px;
   font-weight: 700;
 }
+.loading-color {
+  color: var(--primary);
+}
