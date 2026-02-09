@@ -1,5 +1,5 @@
 <template>
-    <div class="offcanvas offcanvas-bottom border-0" tabindex="-1" id="offcanvasPix">
+    <div class="offcanvas offcanvas-bottom border-0" tabindex="-1" ref="sidebarRef" id="offcanvasPix" >
         <div class="offcanvas-header border-bottom py-3">
             <h5 class="offcanvas-title fw-bold text-dark">
             <i class="bi bi-qr-code-scan text-danger me-2"></i>Área Pix
@@ -47,7 +47,7 @@
                     <p class="m-0 text-muted small" style="font-size: 0.7rem;">{{ t.data }}</p>
                     </div>
                 </div>
-                <span class="fw-bold text-dark small">- R$ {{ t.valor.toFixed(2) }}</span>
+                <span :class="['fw-bold small', t.tipo === 'entrada' ? 'text-success' : 'text-dark']">{{ t.valor }}</span>
                 </div>
             </div>
             </section>
@@ -56,22 +56,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { Offcanvas } from 'bootstrap';
+import { pix } from '../../api/models/apis';
 
+const isloading = ref(true);
+const sidebarRef = ref(null);
 let pixOffcanvas = null;
 
-const minhasChaves = ref([
-  { tipo: 'CPF', chave: '123.***.***-00' },
-  { tipo: 'E-mail', chave: 'michael.ds@maze.com' },
-  { tipo: 'Celular', chave: '(11) 9****-1234' }
-]);
+const minhasChaves = ref([]);
+const ultimasTransferencias = ref([]);
 
-const ultimasTransferencias = ref([
-  { nome: 'Franklin Clinton', valor: 500.00, data: 'Hoje' },
-  { nome: 'Lamar Davis', valor: 150.00, data: 'Ontem' },
-  { nome: 'Trevor Philips', valor: 2500.00, data: '15 Jan' }
-]);
+onMounted(async () => {
+  await pegarChaves();
+  await pegarTransferencias();
+  isloading.value = false;
+
+  await nextTick();
+
+  if (sidebarRef.value) {
+    pixOffcanvas = new Offcanvas(sidebarRef.value);
+  }
+});
+
+async function pegarChaves() {
+  try {
+    const response = await pix.chaves();
+    minhasChaves.value = response;
+  } catch (error) {
+    console.error("Erro ao buscar chaves:", error);
+  }
+}
+
+async function pegarTransferencias() {
+  try {
+    const response = await pix.resumo();
+    ultimasTransferencias.value = response.map((transferencias) => {
+       return {
+        nome: transferencias.recebedor_nome, 
+        valor: `${formatarTipo(transferencias.tipo)} R$ ${(transferencias.valor/100).toFixed(2)}`, 
+        data: formatarData(transferencias.data),
+        tipo: isEntrada(transferencias.tipo),
+       }
+    })
+  } catch (error) {
+    console.error("Erro ao buscar Transferencias:", error);
+  }
+}
 
 const abrirPix = () => {
   if (pixOffcanvas) {
@@ -85,10 +116,52 @@ const abrirPix = () => {
   }
 };
 
-onMounted(() => {
-  const el = document.getElementById('offcanvasPix');
-  if (el) pixOffcanvas = new Offcanvas(el);
-});
+const formatarTipo = (tipo) => {
+  let tipoformatado;
+
+  if (tipo === "PIX_ENVIADO") {
+    tipoformatado = '-'
+  } else {
+    tipoformatado = '+'
+  };
+
+  return tipoformatado;
+}
+
+const isEntrada = (tipo) => {
+  let entrada;
+
+  if (tipo === "PIX_ENVIADO") {
+    entrada = false
+  } else {
+    entrada = true
+  };
+
+  return entrada;
+}
+
+const formatarData = (dataString) => {
+  if (!dataString) return "";
+
+  const dataAlvo = new Date(dataString);
+  const hoje = new Date();
+
+  const dataAlvoZerada = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+  const hojeZerado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+  const diffDias = Math.round((hojeZerado - dataAlvoZerada) / (1000 * 60 * 60 * 24));
+
+  if (diffDias === 0) return "Hoje";
+  if (diffDias === 1) return "Ontem";
+
+  const dia = dataAlvo.getDate().toString().padStart(2, '0');
+  const mes = dataAlvo.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+  const ano = dataAlvo.getFullYear();
+
+  const mesFormatado = mes.charAt(0).toUpperCase() + mes.slice(1);
+
+  return `${dia} ${mesFormatado} ${ano}`;
+};
 
 defineExpose({
   abrirPix

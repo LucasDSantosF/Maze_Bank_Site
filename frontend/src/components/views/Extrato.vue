@@ -12,7 +12,7 @@
         <label class="form-label extra-small fw-bold text-muted text-uppercase mb-2">Filtrar por tipo</label>
         <div class="d-flex gap-2 overflow-auto pb-2 custom-scrollbar">
           <button v-for="filtro in opcoesFiltro" :key="filtro.id"
-                  @click="filtroAtivo = filtro.id"
+                  @click="alterarFiltroTipo(filtro.id)"
                   :class="['btn btn-sm rounded-pill px-3 fw-bold transition', 
                            filtroAtivo === filtro.id ? 'btn-danger shadow-sm' : 'btn-white border-0 text-muted shadow-sm']">
             {{ filtro.label }}
@@ -26,48 +26,47 @@
               <div class="date-field">
                 <span class="date-label">Início</span>
                 <input type="date" class="form-control border-0 bg-white rounded-3 shadow-sm pt-4" 
-                       v-model="periodo.inicio">
+                       v-model="periodo.inicio" @change="carregarExtrato">
               </div>
             </div>
             <div class="col-6">
               <div class="date-field">
                 <span class="date-label">Fim</span>
                 <input type="date" class="form-control border-0 bg-white rounded-3 shadow-sm pt-4" 
-                       v-model="periodo.fim">
+                       v-model="periodo.fim" @change="carregarExtrato">
               </div>
             </div>
-          </div>
-          <div v-if="periodo.inicio || periodo.fim" class="mt-2 text-end">
-             <button class="btn btn-link btn-sm text-danger p-0 extra-small fw-bold text-decoration-none" @click="limparDatas">
-               LIMPAR FILTRO DE DATA
-             </button>
           </div>
         </div>
       </div>
 
       <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="list-group list-group-flush">
+        <div v-if="carregando" class="text-center py-5">
+          <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+          <p class="extra-small text-muted mt-2">Sincronizando Maze Bank...</p>
+        </div>
+
+        <div v-else class="list-group list-group-flush">
           <button v-for="item in transacoesFiltradas" :key="item.id"
                   @click="verDetalhes(item)"
                   class="list-group-item list-group-item-action py-3 border-0 border-bottom d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
               <div :class="['icon-box rounded-circle d-flex align-items-center justify-content-center', 
-                            item.tipo === 'entrada' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger']">
-                <i :class="item.tipo === 'entrada' ? 'bi bi-arrow-down-left' : 'bi bi-arrow-up-right'"></i>
+                            isEntrada(item.tipo) ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger']">
+                <i :class="isEntrada(item.tipo) ? 'bi bi-arrow-down-left' : 'bi bi-arrow-up-right'"></i>
               </div>
-              <div>
-                <p class="m-0 fw-bold small text-dark">{{ item.titulo }}</p>
-                <p class="m-0 text-muted extra-small">{{ formatarData(item.data) }} • {{ item.categoria }}</p>
+              <div class="text-start">
+                <p class="m-0 fw-bold small text-dark">{{ getNomeExibicao(item) }}</p>
+                <p class="m-0 text-muted extra-small">{{ formatarDataAmigavel(item.data) }} • {{ formatarCategoria(item.tipo) }}</p>
               </div>
             </div>
-            <span :class="['fw-bold', item.tipo === 'entrada' ? 'text-success' : 'text-dark']">
-              {{ item.tipo === 'entrada' ? '+' : '-' }} {{ formatarMoeda(item.valor) }}
+            <span :class="['fw-bold', isEntrada(item.tipo) ? 'text-success' : 'text-dark']">
+              {{ isEntrada(item.tipo) ? '+' : '-' }} {{ formatarMoeda(item.valor) }}
             </span>
           </button>
           
           <div v-if="transacoesFiltradas.length === 0" class="p-5 text-center">
-            <i class="bi bi-calendar-x text-muted display-6"></i>
-            <p class="text-muted mt-2 small">Nenhuma transação neste período.</p>
+            <p class="text-muted small">Nenhuma transação encontrada.</p>
           </div>
         </div>
       </div>
@@ -104,13 +103,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas, Modal } from 'bootstrap';
+import { transactions } from '../../api/models/apis';
 
 let offcanvasBS = null;
 let modalBS = null;
 
+const carregando = ref(false);
 const filtroAtivo = ref('todos');
 const periodo = ref({ inicio: '', fim: '' });
 const itemSelecionado = ref(null);
+const transacoes = ref([]);
 
 const opcoesFiltro = [
   { id: 'todos', label: 'Tudo' },
@@ -119,58 +121,92 @@ const opcoesFiltro = [
   { id: 'pix', label: 'Pix' }
 ];
 
-const transacoes = ref([
-  { id: 1, tipo: 'saida', titulo: 'Pagamento de Conta', categoria: 'Pix', valor: 150.00, data: '2026-01-25', destino: 'Energisa S/A' },
-  { id: 2, tipo: 'entrada', titulo: 'Depósito Recebido', categoria: 'Transferência', valor: 2500.00, data: '2026-01-24', origem: 'Maze Bank Corp' },
-  { id: 3, tipo: 'saida', titulo: 'Restaurante Vinewood', categoria: 'Crédito', valor: 89.90, data: '2026-01-22', destino: 'Vinewood Grill' },
-  { id: 4, tipo: 'saida', titulo: 'Transferência Pix', categoria: 'Pix', valor: 450.00, data: '2026-01-20', destino: 'Franklin Clinton' }
-]);
+onMounted(async () => {
+  offcanvasBS = new Offcanvas(document.getElementById('offcanvasExtrato'));
+  modalBS = new Modal(document.getElementById('modalDetalheTransacao'));
+  await carregarExtrato();
+});
+
+const isEntrada = (tipo) => tipo === 'DEPOSITO' || tipo.endsWith('_RECEBIDO');
+
+const getNomeExibicao = (item) => {
+  if (item.tipo === 'SAQUE') return 'Saque Caixa Eletrônico';
+  if (item.tipo === 'DEPOSITO') return 'Depósito Recebido';
+
+  return isEntrada(item.tipo) ? (item.remetente_nome || 'Maze User') : (item.recebedor_nome || 'Maze User');
+};
+
+const formatarCategoria = (tipo) => {
+  if (tipo.includes('PIX')) return 'Pix';
+  if (tipo.includes('TRANSFERENCIA')) return 'TED';
+  if (tipo === 'DEPOSITO') return 'Depósito';
+  return 'Saque';
+};
+
+const carregarExtrato = async () => {
+  carregando.value = true;
+  try {
+    const filtros = {
+      tipo: filtroAtivo.value === 'todos' ? null : filtroAtivo.value,
+      data_inicio: periodo.value.inicio ? `${periodo.value.inicio}T00:00:00` : null,
+      data_fim: periodo.value.fim ? `${periodo.value.fim}T23:59:59` : null
+    };
+    transacoes.value = await transactions.extrato(filtros);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    carregando.value = false;
+  }
+};
+
+const alterarFiltroTipo = (id) => {
+  filtroAtivo.value = id;
+  carregarExtrato();
+};
 
 const transacoesFiltradas = computed(() => {
-  return transacoes.value.filter(t => {
-    const matchFiltro = filtroAtivo.value === 'todos' || t.tipo === filtroAtivo.value || t.categoria.toLowerCase() === filtroAtivo.value;
-    const dataTransacao = new Date(t.data);
-    const dataInicio = periodo.value.inicio ? new Date(periodo.value.inicio) : null;
-    const dataFim = periodo.value.fim ? new Date(periodo.value.fim) : null;
-    
-    let matchData = true;
-    if (dataInicio) matchData = matchData && dataTransacao >= dataInicio;
-    if (dataFim) matchData = matchData && dataTransacao <= dataFim;
-    return matchFiltro && matchData;
-  }).sort((a, b) => new Date(b.data) - new Date(a.data));
+  return [...transacoes.value].sort((a, b) => new Date(b.data) - new Date(a.data));
 });
+
+const verDetalhes = (item) => {
+  itemSelecionado.value = item;
+  modalBS.show();
+};
 
 const detalhesComprovante = computed(() => {
   if (!itemSelecionado.value) return {};
   const t = itemSelecionado.value;
   return {
-    "Transação": t.titulo,
-    "Data": formatarData(t.data),
-    "ID Transação": Math.random().toString(36).substr(2, 9).toUpperCase(),
-    [t.tipo === 'entrada' ? 'Origem' : 'Destino']: t.origem || t.destino,
-    "Status": "Concluído"
+    "Operação": formatarCategoria(t.tipo),
+    "ID": t.id_transferencia.split('-')[0].toUpperCase(),
+    "Data": new Date(t.data).toLocaleString('pt-BR'),
+    [isEntrada(t.tipo) ? 'Remetente' : 'Recebedor']: getNomeExibicao(t),
+    "Documento": isEntrada(t.tipo) ? t.remetente_cpf : t.recebedor_cpf,
+    "Status": "Efetivado"
   };
 });
 
-onMounted(() => {
-  offcanvasBS = new Offcanvas(document.getElementById('offcanvasExtrato'));
-  modalBS = new Modal(document.getElementById('modalDetalheTransacao'));
-});
-
-const limparDatas = () => { periodo.value = { inicio: '', fim: '' }; };
-const abrirExtrato = () => offcanvasBS?.show();
-const verDetalhes = (item) => {
-  itemSelecionado.value = item;
-  modalBS?.show();
+const formatarMoeda = (val) => {
+  const real = (val || 0) / 100;
+  return real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
-const formatarMoeda = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const formatarData = (dataStr) => {
-  const [ano, mes, dia] = dataStr.split('-');
-  return `${dia}/${mes}/${ano}`;
+const formatarDataAmigavel = (dataString) => {
+  if (!dataString) return "";
+  const d = new Date(dataString);
+  const hoje = new Date();
+  if (d.toDateString() === hoje.toDateString()) return "Hoje";
+  hoje.setDate(hoje.getDate() - 1);
+  if (d.toDateString() === hoje.toDateString()) return "Ontem";
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
 };
 
-defineExpose({ abrirExtrato });
+const limparDatas = () => {
+  periodo.value = { inicio: '', fim: '' };
+  carregarExtrato();
+};
+
+defineExpose({ abrirExtrato: () => offcanvasBS.show() });
 </script>
 
 <style scoped>

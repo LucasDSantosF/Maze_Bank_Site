@@ -111,7 +111,7 @@
       <MinhasChaves ref="chavesComponent" />
       <Transferencia ref="transferenciaComponent" />
       <Extrato ref="extratoComponent" />
-      <Saque ref="saqueComponent" />
+      <Saque ref="saqueComponent" :saldo="user.saldo" />
       <Deposito ref="depositoComponent" />
     </main>
   </div>
@@ -171,7 +171,7 @@ async function pegarUsuario() {
       cpf: response.cpf,
       agencia: response.detalhes_bancarios.agencia,
       conta: response.detalhes_bancarios.conta,
-      saldo: response.detalhes_bancarios.saldo.toLocaleString('pt-BR', {
+      saldo: (response.detalhes_bancarios.saldo/100).toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL',
       })

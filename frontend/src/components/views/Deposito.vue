@@ -73,6 +73,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas } from 'bootstrap';
+import { transactions } from '../../api/models/apis';
 
 let offcanvasBS = null;
 const step = ref(1);
@@ -104,16 +105,19 @@ const inputWidth = computed(() => {
 });
 
 // LÓGICA DE PROCESSO
-const processarDeposito = () => {
-  // Simulação de delay de rede
-  setTimeout(() => {
-    // 90% de chance de sucesso para simulação
-    if (Math.random() > 0.1) {
-      step.value = 'sucesso';
-    } else {
-      step.value = 'erro';
+const processarDeposito = async () => {
+  try {
+    const payload = {
+      valor: valorDeposito.value, 
     }
-  }, 1000);
+    console.log(payload)
+    const response = await transactions.deposito(payload);
+    console.log(response)
+    step.value = 'sucesso';
+  } catch (error) {
+    console.log(response)
+    step.value = 'erro';
+  }
 };
 
 const resetarDeposito = () => {

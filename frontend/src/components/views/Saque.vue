@@ -27,7 +27,7 @@
                 >
             </div>
           </div>
-          <p class="text-muted small mt-3">Saldo disponível: <span class="fw-bold">R$ 5.000,00</span></p>
+          <p class="text-muted small mt-3">Saldo disponível: <span class="fw-bold">{{ saldo }}</span></p>
         </div>
 
         <button @click="processarSaque" 
@@ -71,13 +71,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, defineProps } from 'vue';
 import { Offcanvas } from 'bootstrap';
+import { transactions } from '../../api/models/apis';
+
+defineProps({
+  saldo: {
+    type: String,
+    default: '0,00'
+  },
+})
 
 let offcanvasBS = null;
 const step = ref(1);
 const valorSaque = ref(0);
-const saldoSimulado = 500000;
 
 const valorExibido = computed(() => {
   if (!valorSaque.value) return '0,00';
@@ -105,14 +112,19 @@ const inputWidth = computed(() => {
 });
 
 // LÓGICA DE PROCESSO
-const processarSaque = () => {
-  setTimeout(() => {
-    if (valorSaque.value > saldoSimulado) {
-      step.value = 'erro';
-    } else {
-      step.value = 'sucesso';
+const processarSaque = async () => {
+  try {
+    const payload = {
+      valor: valorSaque.value, 
     }
-  }, 800);
+    console.log(payload)
+    const response = await transactions.saque(payload);
+    console.log(response)
+    step.value = 'sucesso';
+  } catch (error) {
+    console.log(response)
+    step.value = 'erro';
+  }
 };
 
 const resetarSaque = () => {

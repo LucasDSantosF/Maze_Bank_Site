@@ -138,7 +138,6 @@ async function signIn() {
         router.push({ name: 'Home' });
     } catch (error) {
         erroMsg.value = error.response?.data.detail || undefined;
-        dadosSignIn.value = {};
         mostrarErro.value = true;
     } finally {
       isLoadingBotao.value = false;

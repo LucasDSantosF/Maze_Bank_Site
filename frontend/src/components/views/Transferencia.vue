@@ -29,19 +29,59 @@
         <h6 class="fw-bold mb-3 small text-muted text-uppercase">Contatos Recentes</h6>
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
           <div class="list-group list-group-flush">
-            <button v-for="contato in contatos" :key="contato.nome" 
-                    @click="selecionarContato(contato)"
-                    class="list-group-item list-group-item-action py-3 d-flex align-items-center gap-3 border-0 border-bottom">
-              <div class="avatar-sm bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
-                {{ contato.nome.charAt(0) }}
+            <div v-for="contato in contatos" :key="contato.nome" 
+                class="list-group-item py-3 d-flex align-items-center justify-content-between border-0 border-bottom">
+              
+              <div class="d-flex align-items-center gap-3 cursor-pointer flex-grow-1">
+                <div class="avatar-sm bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                  {{ contato.nome.charAt(0) }}
+                </div>
+                <div class="text-start">
+                  <p class="m-0 fw-bold small text-dark">{{ contato.nome }}</p>
+                  <p class="m-0 text-muted extra-small">Ag. {{ contato.dados.agencia || '0001' }} / Cc. {{ contato.dados.conta }}</p>
+                  <p v-if="contato.chave.chave" class="m-0 text-muted extra-small text-truncate" style="max-width: 150px;">
+                    <i class="bi bi-qr-code-scan"></i> {{ contato.chave.tipo }}: {{ contato.chave.chave }}
+                  </p>
+                </div>
               </div>
-              <div class="text-start">
-                <p class="m-0 fw-bold small text-dark">{{ contato.nome }}</p>
-                <p class="m-0 text-muted extra-small">{{ contato.banco }}</p>
+
+              <div class="d-flex gap-2">
+                <button v-if="contato.chave_pix" 
+                        @click.stop="iniciarPixDireto(contato)" 
+                        class="btn btn-sm btn-outline-danger rounded-circle action-btn"
+                        title="Transferir via Pix">
+                  <i class="bi bi-qr-code-scan"></i>
+                </button>
+
+                <button @click.stop="iniciarTedDireto(contato)" 
+                        class="btn btn-sm btn-outline-dark rounded-circle action-btn"
+                        title="Transferir via TED">
+                  <i class="bi bi-bank"></i>
+                </button>
               </div>
-            </button>
+            </div>
           </div>
         </div>
+        <section>
+            <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                <h6 class="fw-bold m-0">Últimas Transferências</h6>
+                <a href="#" class="text-danger small fw-bold text-decoration-none"  @click="$emit('abrirExtrato')">Ver Extrato</a>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4 p-2">
+                <div v-for="t in ultimasTransferencias" :key="t.nome" class="d-flex align-items-center justify-content-between p-2 border-bottom last-item-border">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-sm bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-person"></i>
+                    </div>
+                    <div>
+                    <p class="m-0 fw-bold small text-dark">{{ t.nome }}</p>
+                    <p class="m-0 text-muted small" style="font-size: 0.7rem;">{{ t.data }}</p>
+                    </div>
+                </div>
+                <span :class="['fw-bold small', t.tipo === 'entrada' ? 'text-success' : 'text-dark']">{{ t.valor }}</span>
+                </div>
+            </div>
+            </section>
       </div>
 
       <div v-if="step === 2">
@@ -99,7 +139,7 @@
             >
           </div>
         </div>
-        <button @click="proximoStep" class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mb-3" 
+        <button @click="sinalizar" class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mb-3" 
                 :disabled="!dados.valor || dados.valor <= 0">
           Continuar
         </button>
@@ -112,17 +152,29 @@
             <h2 class="fw-bold text-dark">{{ formatarMoedaFinal(dados.valor) }}</h2>
           </div>
           <div class="d-flex flex-column gap-3">
+            <div v-if="fluxo === 'pix'" class="border-bottom pb-2">
+              <label class="extra-small text-muted text-uppercase fw-bold">Chave Pix ({{dadosConfirmar.chave.tipo }})</label>
+              <p class="m-0 fw-medium text-dark">{{ dadosConfirmar.chave.chave }}</p>
+            </div>
+            <div class="border-bottom pb-2">
+              <label class="extra-small text-muted text-uppercase fw-bold">De</label>
+              <p class="m-0 fw-bold text-dark">{{ dadosConfirmar.remetente.nome || 'Remetente' }}</p>
+            </div>
+            <div class="border-bottom pb-2">
+              <label class="extra-small text-muted text-uppercase fw-bold">Dados Bancários</label>
+              <p v-if="dadosConfirmar.remetente.conta" class="m-0 fw-medium text-dark">
+                Ag. {{ dadosConfirmar.remetente.agencia || '0001' }} / Cc. {{ dadosConfirmar.remetente.conta }}
+              </p>
+              <p v-if="dadosConfirmar.remetente.cpf" class="m-0 fw-medium text-dark">CPF: {{ dadosConfirmar.remetente.cpf }} </p>
+            </div>
             <div class="border-bottom pb-2">
               <label class="extra-small text-muted text-uppercase fw-bold">Para</label>
-              <p class="m-0 fw-bold text-dark">{{ dados.nome || 'Destinatário Externo' }}</p>
+              <p class="m-0 fw-bold text-dark">{{ dadosConfirmar.recebedor.nome || 'Recebedor Externo' }}</p>
             </div>
-            <div v-if="fluxo === 'pix'" class="border-bottom pb-2">
-              <label class="extra-small text-muted text-uppercase fw-bold">Chave Pix ({{ dados.tipoChave }})</label>
-              <p class="m-0 fw-medium text-dark">{{ dados.chave }}</p>
-            </div>
-            <div v-else class="border-bottom pb-2">
+            <div class="border-bottom pb-2">
               <label class="extra-small text-muted text-uppercase fw-bold">Dados Bancários</label>
-              <p class="m-0 fw-medium text-dark">Ag. {{ dados.agencia }} / Cc. {{ dados.conta }}</p>
+              <p  v-if="dadosConfirmar.recebedor.conta" class="m-0 fw-medium text-dark">Ag. {{ dadosConfirmar.recebedor.agencia }} / Cc. {{ dadosConfirmar.recebedor.conta }}</p>
+              <p v-if="dadosConfirmar.recebedor.cpf" class="m-0 fw-medium text-dark">CPF: {{ dadosConfirmar.recebedor.cpf }} </p>
             </div>
           </div>
         </div>
@@ -136,6 +188,7 @@
           <i class="bi bi-check-lg display-3"></i>
         </div>
         <h3 class="fw-bold">Envio realizado!</h3>
+        <p class="text-muted">O valor de <span class="fw-bold text-dark">{{ formatarMoedaFinal(dados.valor) }}</span> foi enviado para <strong>{{ dadosConfirmar.recebedor.nome }}</strong>.</p>
         <button @click="resetarFluxoCompleto" class="btn btn-dark w-100 py-3 rounded-4 fw-bold mt-5">Concluir</button>
       </div>
 
@@ -153,15 +206,42 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas } from 'bootstrap';
-
-
+import { transactions } from '../../api/models/apis';
 
 let offcanvasBS = null;
 const step = ref(1);
 const fluxo = ref('');
-const dados = ref({ tipoChave: 'cpf', chave: '', agencia: '', conta: '', valor: 0, nome: '' });
-
-const contatos = [{ nome: 'Franklin Clinton', banco: 'Maze Bank' }, { nome: 'Lamar Davis', banco: 'Fleeca Bank' }];
+const dados = ref({ 
+  tipoChave: 'cpf', 
+  chave: '', 
+  agencia: '', 
+  conta: '', 
+  valor: 0, 
+  nome: '' 
+});
+const dadosConfirmar = ref({
+  id_transferencia: '',
+  tipoChave: 'cpf', 
+  chave: '', 
+  remetente: {
+    nome: '',
+    conta: '',
+    cpf: '',
+  },
+  recebedor: {
+        nome: '',
+        cpf: '',
+        agencia: '',
+        conta: ''
+  },
+  chave: {
+    chave: '', 
+    tipo: ''
+  },
+  valor: 0,
+});
+const contatos = ref([]);
+const ultimasTransferencias = ref([]);
 
 // MÁSCARAS V-MASK
 const maskSelector = computed(() => {
@@ -198,12 +278,66 @@ const tituloStep = computed(() => {
 });
 
 const iniciarFluxo = (t) => { fluxo.value = t; step.value = 2; };
-const selecionarContato = (c) => { dados.value.nome = c.nome; fluxo.value = 'ted'; step.value = 3; };
 const proximoStep = () => step.value++;
 const voltarStep = () => step.value--;
+const iniciarPixDireto = (contato) => {
+  dados.value.chave = contato.chave.chave
+  dados.value.tipoChave = contato.chave.tipo
+  fluxo.value = 'pix'; 
+  step.value = 3; 
+};
+const iniciarTedDireto = (contato) => { 
+  dados.value.agencia = contato.dados.agencia
+  dados.value.conta = contato.dados.conta
+  fluxo.value = 'ted'; 
+  step.value = 3; 
+};
 
-const processarPagamento = () => {
-  setTimeout(() => { step.value = dados.value.valor > 500000 ? 'erro' : 'sucesso'; }, 1000);
+const formatarTipo = (tipo) => {
+  let tipoformatado;
+
+  if (tipo.includes('ENVIADO') || tipo.includes('ENVIADA')) {
+    tipoformatado = '-'
+  } else {
+    tipoformatado = '+'
+  };
+
+  return tipoformatado;
+}
+
+const isEntrada = (tipo) => {
+  let entrada;
+
+  if (tipo.includes('ENVIADO') || tipo.includes('ENVIADA')) {
+    entrada = false
+  } else {
+    entrada = true
+  };
+
+  return entrada;
+}
+
+const formatarData = (dataString) => {
+  if (!dataString) return "";
+
+  const dataAlvo = new Date(dataString);
+  const hoje = new Date();
+
+  const dataAlvoZerada = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+  const hojeZerado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+  const diffDias = Math.round((hojeZerado - dataAlvoZerada) / (1000 * 60 * 60 * 24));
+
+  if (diffDias === 0) return "Hoje";
+  if (diffDias === 1) return "Ontem";
+
+  const dia = dataAlvo.getDate().toString().padStart(2, '0');
+  const mes = dataAlvo.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+  const ano = dataAlvo.getFullYear();
+
+  const mesFormatado = mes.charAt(0).toUpperCase() + mes.slice(1);
+
+  return `${dia} ${mesFormatado} ${ano}`;
 };
 
 const resetarFluxoCompleto = () => {
@@ -214,10 +348,92 @@ const resetarFluxoCompleto = () => {
   }, 400);
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await pegarContatos();
+  await pegarTransferencias();
+
   const el = document.getElementById('offcanvasTransferencia');
   if (el) offcanvasBS = new Offcanvas(el);
 });
+
+async function pegarContatos() {
+  try {
+    const response = await transactions.contatos();
+    console.log(response);
+    contatos.value = response
+    console.log(contatos.value);
+  } catch (error) {
+    console.error("Erro ao buscar contatos:", error);
+  }
+}
+
+async function pegarTransferencias() {
+  try {
+    const response = await transactions.resumo();
+    ultimasTransferencias.value = response.map((transferencias) => {
+       return {
+        nome: transferencias.recebedor_nome, 
+        valor: `${formatarTipo(transferencias.tipo)} R$ ${(transferencias.valor/100).toFixed(2)}`, 
+        data: formatarData(transferencias.data),
+        tipo: isEntrada(transferencias.tipo),
+       }
+    })
+  } catch (error) {
+    console.error("Erro ao buscar Transferencias:", error);
+  }
+}
+
+async function sinalizar() {
+  if(dados.value.agencia != '' && dados.value.conta != '') {
+    await ted();
+  }  else {
+    await pix();
+  };
+  proximoStep();
+}
+
+
+async function ted() {
+  try {
+    const payload = {
+      valor: dados.value.valor,
+      agencia: dados.value.agencia,
+      conta: dados.value.conta,
+    }
+    const response = await transactions.ted(payload);
+    dadosConfirmar.value = response
+  } catch (error) {
+    console.error("Erro ao buscar contatos:", error);
+  }
+}
+
+async function pix() {
+  try {
+    const payload = {
+      valor: dados.value.valor,
+      chave: dados.value.chave,
+      tipo_chave: dados.value.tipoChave,
+    }
+    const response = await transactions.pix(payload);
+    dadosConfirmar.value = response
+  } catch (error) {
+    console.error("Erro ao buscar contatos:", error);
+  }
+}
+
+async function processarPagamento() {
+  try {
+    const payload = {
+      id_transferencia: dadosConfirmar.value.id_transferencia,
+    }
+    const response = await transactions.confirmar(payload);
+    console.log(response)
+    step.value = 'sucesso';
+  } catch (error) {
+    console.error("Erro ao buscar contatos:", error);
+    step.value = 'erro';
+  }
+};
 
 const abrirTransferencia = () => offcanvasBS?.show();
 defineExpose({ abrirTransferencia });

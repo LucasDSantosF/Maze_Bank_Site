@@ -21,13 +21,13 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <small class="text-muted d-block small-label text-uppercase">{{ chave.tipo }}</small>
-                <span class="fw-bold text-dark">{{ chave.valor }}</span>
+                <span class="fw-bold text-dark">{{ chave.chave }}</span>
               </div>
               <div class="d-flex gap-2">
-                <button class="btn btn-light btn-sm rounded-circle shadow-sm" @click="copiarChave(chave.valor)" title="Copiar">
+                <button class="btn btn-light btn-sm rounded-circle shadow-sm" @click="copiarChave(chave.chave)" title="Copiar">
                   <i class="bi bi-copy text-primary"></i>
                 </button>
-                <button class="btn btn-light btn-sm rounded-circle shadow-sm" @click="prepararExclusao(index)" title="Excluir">
+                <button class="btn btn-light btn-sm rounded-circle shadow-sm" @click="prepararExclusao(chave.chave)" title="Excluir">
                   <i class="bi bi-trash text-danger"></i>
                 </button>
               </div>
@@ -116,16 +116,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas, Modal } from 'bootstrap';
+import { pix } from '../../api/models/apis';
 
 // ESTADOS REATIVOS
-const chaves = ref([
-  { tipo: 'CPF', valor: '123.456.789-00' },
-  { tipo: 'E-mail', valor: 'michael.ds@maze.com' },
-  { tipo: 'Celular', valor: '(11) 98765-4321' }
-]);
+const chaves = ref([]);
 
 const novaChave = ref({ tipo: 'CPF', valor: '' });
-const indexParaExcluir = ref(null);
+const chaveParaExcluir = ref(null);
 
 // REFERÊNCIAS DO BOOTSTRAP
 let chavesOffcanvas = null;
@@ -149,13 +146,24 @@ const placeholderSelector = computed(() => {
 });
 
 // INICIALIZAÇÃO DOS COMPONENTES JS
-onMounted(() => {
+onMounted(async () => {
+  await pegarChaves();
+
   const elOffcanvas = document.getElementById('offcanvasChaves');
   if (elOffcanvas) chavesOffcanvas = new Offcanvas(elOffcanvas);
 
   const elModalExcluir = document.getElementById('modalConfirmarExclusao');
   if (elModalExcluir) modalExcluirBS = new Modal(elModalExcluir);
 });
+
+async function pegarChaves() {
+  try {
+    const response = await pix.chaves();
+    chaves.value = response
+  } catch (error) {
+    console.error("Erro ao buscar chaves:", error);
+  }
+}
 
 // FUNÇÕES DE AÇÃO
 const abrirChaves = () => chavesOffcanvas?.show();
@@ -165,36 +173,47 @@ const copiarChave = (valor) => {
   alert('Chave copiada com sucesso!');
 };
 
-const salvarChave = () => {
-  // Lógica para chave Aleatória
+const salvarChave = async () => {
   if (novaChave.value.tipo === 'Aleatória') {
-    const hash = Math.random().toString(36).substring(2, 10).toUpperCase();
-    novaChave.value.valor = `MAZE-${hash}`;
+    novaChave.value.tipo = 'Aleatoria';
   }
 
   if (novaChave.value.valor) {
-    chaves.value.push({ ...novaChave.value });
-    
-    // Reset e Fechamento
-    novaChave.value.valor = '';
-    novaChave.value.tipo = 'CPF';
-    document.getElementById('closeModalCadastro').click();
+    try {
+      const payload = {
+        valor: novaChave.value.valor,
+        tipo: novaChave.value.tipo
+      } 
+
+      const response = await pix.chave(payload);
+      console.log(response)
+      document.getElementById('closeModalCadastro').click();
+    } catch (error) {
+      console.error("Erro ao buscar chaves:", error);
+    } finally{}
   } else {
     alert('Por favor, preencha o valor da chave.');
   }
 };
 
 // CONTROLE DE EXCLUSÃO
-const prepararExclusao = (index) => {
-  indexParaExcluir.value = index;
+const prepararExclusao = (chave) => {
+  chaveParaExcluir.value = chave;
   modalExcluirBS.show();
 };
 
-const confirmarExclusao = () => {
-  if (indexParaExcluir.value !== null) {
-    chaves.value.splice(indexParaExcluir.value, 1);
-    indexParaExcluir.value = null;
-    modalExcluirBS.hide();
+const confirmarExclusao = async () => {
+  if (chaveParaExcluir.value !== null) {
+    try {
+    const payload = { 
+      valor: chaveParaExcluir.value 
+    }
+    console.log(payload)
+      const response = await pix.excluir(payload);
+      chaves.value = response
+    } catch (error) {
+      console.error("Erro ao excluir chave:", error);
+    }
   }
 };
 
