@@ -10,7 +10,8 @@ from config import settings
 from models import models
 from db.database import get_db
 from utils import validators
-from models.body import UserCreate, Login
+from schema.request import Usuario, Login
+from schema.response import BaseResponse, ErrorResponseSchema
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -24,13 +25,13 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not access_token and not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT,
-            detail="Nenhum cookie de sessão encontrado"
+            detail={"message": "Nenhum cookie de sessão encontrado", "error_code": "NO_CONTENT"}
         )
 
     if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Access token ausente"
+            detail={"message": "Access token ausente", "error_code": "UNAUTHORIZED"}
         )
 
     try:
@@ -40,13 +41,13 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         if cpf is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, 
-                detail="Token inválido"
+                detail={"message": "Token inválido", "error_code": "UNAUTHORIZED"}
             )
             
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Sessão expirada"
+            detail={"message": "Sessão expirada", "error_code": "UNAUTHORIZED"}
         )
 
     usuario = db.query(models.Usuario).filter(models.Usuario.cpf == cpf).first()
@@ -54,7 +55,7 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not usuario:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Usuário não encontrado"
+            detail={"message": "Usuário não encontrado", "error_code": "UNAUTHORIZED"}
         )
     
     return usuario
@@ -75,12 +76,18 @@ def gerar_numero_conta_com_dv():
 
 # --- ROTAS ---
 
-@router.post("/register")
-def registrar(usuario: UserCreate, db: Session = Depends(get_db)):
+@router.post(
+    "/register",
+    responses={401: {"model": ErrorResponseSchema}}
+)
+def registrar(usuario: Usuario, db: Session = Depends(get_db)):
     validators.validar_senha_forte(usuario.senha)
 
     if db.query(models.Usuario).filter(models.Usuario.cpf == usuario.cpf).first():
-        raise HTTPException(status_code=400, detail="CPF já cadastrado")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail={"message": "CPF já cadastrado", "error_code": "BAD_REQUEST"}
+        )
     
     nova_conta = gerar_numero_conta_com_dv()
 
@@ -99,14 +106,24 @@ def registrar(usuario: UserCreate, db: Session = Depends(get_db)):
     )
     db.add(novo_usuario)
     db.commit()
-    return {"message": "Conta criada com sucesso!"}
 
-@router.post("/login")
+    return {
+        "success": True,
+        "message": "Conta criada com sucesso!",
+    }
+
+@router.post(
+    "/login",
+    responses={401: {"model": ErrorResponseSchema}}
+)
 def login(usuario: Login, response: Response, db: Session = Depends(get_db)):
     sessao = db.query(models.Usuario).filter(models.Usuario.cpf == usuario.cpf).first()
     
     if not sessao or not pwd_context.verify(usuario.senha, sessao.senha_hash):
-        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"message": "Credenciais inválidas", "error_code": "UNAUTHORIZED"}
+        )
     
     access = criar_jwt({"sub": sessao.cpf}, timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     refresh = criar_jwt({"sub": sessao.cpf}, timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
@@ -134,13 +151,22 @@ def login(usuario: Login, response: Response, db: Session = Depends(get_db)):
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600
     )
     
-    return {"message": "Login realizado com sucesso"}
+    return {
+        "success": True,
+        "message": "Login realizado com sucesso!",
+    }
 
-@router.post("/refresh")
+@router.post(
+    "/refresh",
+    responses={401: {"model": ErrorResponseSchema}}
+)
 def renovar_acesso(request: Request, response: Response, db: Session = Depends(get_db)):
     token = request.cookies.get("refresh_token")
     if not token:
-        raise HTTPException(status_code=401, detail="Cookie de refresh ausente")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"message": "Cookie de refresh ausente", "error_code": "UNAUTHORIZED"}
+        )
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
@@ -151,7 +177,10 @@ def renovar_acesso(request: Request, response: Response, db: Session = Depends(g
         ).first()
         
         if not usuario:
-            raise HTTPException(status_code=401, detail="Refresh token não reconhecido")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"message": "Refresh token não reconhecido", "error_code": "UNAUTHORIZED"}
+            )
 
         novo_access = criar_jwt({"sub": cpf}, timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
         response.set_cookie(
@@ -164,14 +193,23 @@ def renovar_acesso(request: Request, response: Response, db: Session = Depends(g
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
         
-        return {"message": "Token de acesso renovado"}
+        return {
+            "success": True,
+            "message": "Token de acesso renovado com sucesso!",
+        }
         
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token de refresh expirado ou corrompido")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail={"message": "Token de refresh expirado ou corrompido", "error_code": "UNAUTHORIZED"}
+        )
 
 @router.post("/logout")
 def logout(response: Response):
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
     
-    return {"message": "Sessão encerrada"}
+    return {
+        "success": True,
+        "message": "Sessão encerrada com sucesso!",
+    }

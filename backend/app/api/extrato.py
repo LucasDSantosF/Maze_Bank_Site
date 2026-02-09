@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from datetime import datetime
+
 from db.database import get_db
 from api.auth import get_current_user
 from models import models
+from schema.response import BaseResponse, TransacaoSchema, ErrorResponseSchema
 
 router = APIRouter(prefix="/extrato", tags=["Extrato Bancário"])
 
@@ -12,7 +14,11 @@ def mascarar_cpf(cpf: str):
     if not cpf: return None
     return f"{cpf[:3]}.***.***-{cpf[-2:]}"
 
-@router.get("/")
+@router.get(
+    "/", 
+    response_model=BaseResponse[list[TransacaoSchema]],
+    responses={401: {"model": ErrorResponseSchema}}
+)
 def listar_extrato(
     tipo: str = None, 
     data_inicio: datetime = None, 
@@ -45,19 +51,43 @@ def listar_extrato(
         elif "ENVIADO" in t.tipo or "ENVIADA" in t.tipo:
             t.recebedor_cpf = mascarar_cpf(t.recebedor_cpf)
 
-    return transacoes
+    return {
+        "success": True,
+        "message": "Extrato listado com sucesso",
+        "data": transacoes
+    } 
 
-@router.get("/resumo")
+@router.get(
+    "/resumo",
+    response_model=BaseResponse[list[TransacaoSchema]],
+    responses={401: {"model": ErrorResponseSchema}}
+)
 def resumo_geral(user: models.Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(models.Transacao).filter(
+    transacoes = db.query(models.Transacao).filter(
         models.Transacao.usuario_id == user.id
     ).order_by(models.Transacao.data.desc()).limit(5).all()
 
-@router.get("/resumo/pix")
+    return {
+        "success": True,
+        "message": "Resumo geral obtido",
+        "data": transacoes
+    }
+
+@router.get(
+    "/resumo/pix",
+    response_model=BaseResponse[list[TransacaoSchema]],
+    responses={401: {"model": ErrorResponseSchema}}
+)
 def resumo_pix(user: models.Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(models.Transacao).filter(
+    transacoes = db.query(models.Transacao).filter(
         and_(
             models.Transacao.usuario_id == user.id,
             models.Transacao.tipo.like("PIX_%")
         )
     ).order_by(models.Transacao.data.desc()).limit(5).all()
+
+    return {
+        "success": True,
+        "message": "Resumo de transações Pix obtido",
+        "data": transacoes
+    }

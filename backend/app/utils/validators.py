@@ -1,42 +1,36 @@
 import re
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 def validar_senha_forte(senha: str):
-    # 1. Validar Comprimento Mínimo
     if len(senha) < 8:
         raise HTTPException(
-            status_code=400, 
-            detail="A senha deve ter no mínimo 8 caracteres."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "A senha deve ter no mínimo 8 caracteres.", "error_code": "BAD_REQUEST"}
         )
 
-    # 2. Validar Letra Maiúscula
     if not re.search(r"[A-Z]", senha):
         raise HTTPException(
-            status_code=400, 
-            detail="A senha deve conter pelo menos uma letra maiúscula."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "A senha deve conter pelo menos uma letra maiúscula.", "error_code": "BAD_REQUEST"}
         )
 
-    # 3. Validar Letra Minúscula
     if not re.search(r"[a-z]", senha):
         raise HTTPException(
-            status_code=400, 
-            detail="A senha deve conter pelo menos uma letra minúscula."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "A senha deve conter pelo menos uma letra minúscula.", "error_code": "BAD_REQUEST"}
         )
 
-    # 4. Validar Números
     if not re.search(r"\d", senha):
         raise HTTPException(
-            status_code=400, 
-            detail="A senha deve conter pelo menos um número."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "A senha deve conter pelo menos um número.", "error_code": "BAD_REQUEST"}
         )
 
-    # 5. Validar Caracteres Especiais
-    # Esta regex cobre os mesmos caracteres da sua função JS
     especial_regex = r"[!@#$%^&*(),.?\":{}|<>_\-+=\[\]\\\/;`~]"
     if not re.search(especial_regex, senha):
         raise HTTPException(
-            status_code=400, 
-            detail="A senha deve conter pelo menos um caractere especial (!@#$%^&*...)."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "A senha deve conter pelo menos um caractere especial (!@#$%^&*...).", "error_code": "BAD_REQUEST"}
         )
     
     return True
