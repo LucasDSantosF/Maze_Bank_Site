@@ -4,7 +4,7 @@
       
       <div class="col-lg-5 d-none d-lg-flex flex-column align-items-center justify-content-center p-5 border-end">
         <div class="text-center">
-            <img src="/Maze-Bank-logo.png" alt="Maze Bank Logo" class="img-fluid p-2">
+          <img src="/Maze-Bank-logo.png" alt="Maze Bank Logo" class="img-fluid p-2">
           <h1 class="display-3 fw-bold m-0 text-danger">MAZE BANK</h1>
           <p class="fs-5 text-muted">O banco do futuro, hoje.</p>
         </div>
@@ -13,22 +13,15 @@
       <div class="col-lg-7 d-flex align-items-center justify-content-center maze-gradient text-white">
         <div class="login-form-container p-4 p-md-5">
           <div class="text-center mb-5">
-            <h2 class="fw-bold h1 text-white">Bem-vindo</h2>
-            <p class="opacity-75">Entre na sua conta para continuar</p>
+            <h2 class="fw-bold h1 text-white">
+              {{ isLogin ? 'Bem-vindo' : 'Crie sua conta' }}
+            </h2>
+            <p class="opacity-75">
+              {{ isLogin ? 'Entre na sua conta para continuar' : 'Preencha os dados para se tornar um cliente' }}
+            </p>
           </div>
 
           <ToastAlert v-if="mostrarToast"/>
-
-          <SignIn 
-            v-if="isLogin"
-            @update:dados="dadosSignIn = $event"
-          />
-
-          <SignUp 
-            v-if="!isLogin"
-            @update:dados="dadosSignUp = $event"
-            @update:valido="signUpValida = $event"
-          />
 
           <ErrorAlert 
               v-if="mostrarErro"
@@ -40,30 +33,48 @@
               v-if="sucessoRegistro"
               @close="sucessoRegistro = false"
           />
+
+          <SignIn 
+            v-if="isLogin"
+            @update:dados="dadosSignIn = $event"
+          />
+
+          <SignUp 
+            v-if="!isLogin"
+            @update:dados="dadosSignUp = $event"
+            @update:valido="signUpValida = $event"
+          />
           
-          <div v-if="isLogin" class="d-flex justify-content-between align-items-center mb-3">
-            <p class="align-item-center ">
+          <div class="mb-4 mt-2">
+            <p v-if="isLogin" class="m-0">
               <small class="opacity-75">Não tem uma conta? </small>
               <a 
                 href="#" 
-                @click.prevent="isLogin = false, labelButton = 'Registrar'" 
+                @click.prevent="toggleMode(false, 'Registrar')" 
                 class="text-white fw-semibold">Criar conta
               </a>
             </p>
+            <p v-else class="m-0">
+              <small class="opacity-75">Já possui cadastro? </small>
+              <a 
+                href="#" 
+                @click.prevent="toggleMode(true, 'Entrar')" 
+                class="text-white fw-semibold">Voltar para o Login
+              </a>
+            </p>
           </div>
-            <button 
-              class="btn btn-light w-100 py-3 fs-5 fw-bold text-danger shadow"
-              form="handleData"
+
+          <button 
+              class="btn btn-light w-100 py-3 fs-5 fw-bold text-danger shadow-lg transition-transform"
               :disabled="isLoadingBotao"
               @click="onClick">
                 <span 
                     v-if="isLoadingBotao" 
-                    class="spinner-border spinner-border-sm" 
+                    class="spinner-border spinner-border-sm me-2" 
                     role="status" 
-                    aria-hidden="true"
                 />
-                <span v-else>{{labelButton}}</span> 
-            </button>
+                <span>{{ labelButton }}</span> 
+          </button>
         </div>
       </div>
     </div>
@@ -74,44 +85,43 @@
 import { useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
 import { auth } from '../api/models/apis'
+
 import SignIn from '../components/SignIn.vue';
 import SignUp from '../components/SignUp.vue';
 import ToastAlert from '../components/Alert/ToastAlert.vue';
 import ErrorAlert from '../components/Alert/ErrorAlert.vue';
 import SuccessAlert from '../components/Alert/SuccessAlert.vue';
 
+const router = useRouter();
+
 const isLogin = ref(true);
 const labelButton = ref('Entrar');
+const isLoadingBotao = ref(false);
+const mostrarToast = ref(false);
+const mostrarErro = ref(false);
+const sucessoRegistro = ref(false);
+const erroMsg = ref(undefined);
+
 const dadosSignIn = ref({});
 const dadosSignUp = ref({});
 const signUpValida = ref(false);
-const mostrarToast = ref(false);
-const isLoadingBotao = ref(false);
-const mostrarErro = ref(false);
-const erroMsg = ref(undefined);
-const sucessoRegistro = ref(false);
 
-const router = useRouter();
-
-async function carregarSessao() {
+onMounted(async () => {
     const isAuthenticated = await auth.checkAuth();
-    
-    if (isAuthenticated) {
-        router.push({ name: 'Home' });
-    }
-};
+    if (isAuthenticated) router.push({ name: 'Home' });
+});
 
-onMounted(carregarSessao);
+function toggleMode(loginMode, label) {
+    isLogin.value = loginMode;
+    labelButton.value = label;
+    mostrarErro.value = false;
+}
 
 function showAlertAndHide() {
     mostrarToast.value = false;
-    
     setTimeout(() => {
         mostrarToast.value = true;
-        
-        setTimeout(() => {
-            mostrarToast.value = false;
-        }, 3500);
+        setTimeout(() => { mostrarToast.value = false; }, 3500);
     }, 10); 
 }
 
@@ -122,31 +132,34 @@ const onClick = () => {
       signUp();
     } else {
       showAlertAndHide();
-    };
+    }
 };
 
 async function signIn() {
     try {
         isLoadingBotao.value = true;
+        mostrarErro.value = false;
+        
         const credentials = {
             cpf: dadosSignIn.value.cpf,
             senha: dadosSignIn.value.password,
         };
 
-        const response = await auth.login(credentials);
-
+        await auth.login(credentials);
         router.push({ name: 'Home' });
     } catch (error) {
-        erroMsg.value = error.response?.data.detail || undefined;
+        erroMsg.value = error.response?.data?.message || undefined;
         mostrarErro.value = true;
     } finally {
-      isLoadingBotao.value = false;
+        isLoadingBotao.value = false;
     } 
 }
 
 async function signUp() {
     try {
-      isLoadingBotao.value = true;
+        isLoadingBotao.value = true;
+        mostrarErro.value = false;
+
         const payload = {
             cpf: dadosSignUp.value.cpf,
             nome: dadosSignUp.value.nome,
@@ -155,16 +168,27 @@ async function signUp() {
             senha: dadosSignUp.value.password,
         };
 
-        const response = await auth.registrar(payload);
+        await auth.registrar(payload);
 
         sucessoRegistro.value = true;
-        isLogin.value = true;
+        toggleMode(true, 'Entrar'); 
     } catch (error) {
-        erroMsg.value = error.response?.data.detail || undefined;
+        erroMsg.value = error.response?.data?.message || undefined;
         signUpValida.value = false;
         mostrarErro.value = true;
     } finally {
-      isLoadingBotao.value = false;
+        isLoadingBotao.value = false;
     } 
 }
 </script>
+
+<style scoped>
+.login-form-container {
+  width: 100%;
+  max-width: 450px;
+}
+
+.transition-transform:active {
+  transform: scale(0.98);
+}
+</style>

@@ -11,6 +11,11 @@
     </div>
 
     <div class="offcanvas-body bg-light d-flex flex-column">
+      <ErrorAlert
+        v-if="mostrarErro"
+        :mensagem="erroMsgAlert"
+        @close="mostrarErro = false"
+      />
       
       <div v-if="step === 1">
         <div class="row g-2 mb-4">
@@ -46,7 +51,7 @@
               </div>
 
               <div class="d-flex gap-2">
-                <button v-if="contato.chave_pix" 
+                <button v-if="contato.chave" 
                         @click.stop="iniciarPixDireto(contato)" 
                         class="btn btn-sm btn-outline-danger rounded-circle action-btn"
                         title="Transferir via Pix">
@@ -70,15 +75,17 @@
             <div class="card border-0 shadow-sm rounded-4 p-2">
                 <div v-for="t in ultimasTransferencias" :key="t.nome" class="d-flex align-items-center justify-content-between p-2 border-bottom last-item-border">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="avatar-sm bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center">
-                    <i class="bi bi-person"></i>
+                    <div 
+                      :class="['icon-box rounded-circle d-flex align-items-center justify-content-center', 
+                      t.is_entrada ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger']">
+                        <i :class="t.is_entrada ? 'bi bi-arrow-down-left' : 'bi bi-arrow-up-right'"></i>
                     </div>
                     <div>
                     <p class="m-0 fw-bold small text-dark">{{ t.nome }}</p>
                     <p class="m-0 text-muted small" style="font-size: 0.7rem;">{{ t.data }}</p>
                     </div>
                 </div>
-                <span :class="['fw-bold small', t.tipo === 'entrada' ? 'text-success' : 'text-dark']">{{ t.valor }}</span>
+                <span :class="['fw-bold small', t.is_entrada ? 'text-success' : 'text-dark']">{{ t.valor }}</span>
                 </div>
             </div>
             </section>
@@ -139,9 +146,16 @@
             >
           </div>
         </div>
-        <button @click="sinalizar" class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mb-3" 
-                :disabled="!dados.valor || dados.valor <= 0">
-          Continuar
+        <button 
+          @click="sinalizar" 
+          class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mb-3" 
+          :disabled="(!dados.valor || dados.valor <= 0) && isLoadingBotaoSinalizar">
+          <span 
+              v-if="isLoadingBotaoSinalizar" 
+              class="spinner-border spinner-border-sm me-2" 
+              role="status" 
+          />
+          <span>Continuar</span>
         </button>
       </div>
 
@@ -178,8 +192,16 @@
             </div>
           </div>
         </div>
-        <button @click="processarPagamento" class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mt-auto mb-3">
-          Confirmar Envio
+        <button 
+          @click="processarPagamento" 
+          class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mt-auto mb-3"
+          :disabled="isLoadingBotaoConfirmar">
+          <span 
+              v-if="isLoadingBotaoConfirmar" 
+              class="spinner-border spinner-border-sm me-2" 
+              role="status" 
+          />
+          <span>Confirmar Envio</span>
         </button>
       </div>
 
@@ -201,16 +223,33 @@
       </div>
     </div>
   </div>
+
+  <ErrorModal 
+    v-if="erroFatal" 
+    :erroMsg="erroMsg" 
+    @retry="recarregar" 
+  />
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router';
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas } from 'bootstrap';
 import { transactions } from '../../api/models/apis';
+import ErrorModal from './ErrorModal.vue';
+import ErrorAlert from '../Alert/ErrorAlert.vue';
+
+const router = useRouter();
 
 let offcanvasBS = null;
 const step = ref(1);
 const fluxo = ref('');
+const mostrarErro = ref(false);
+const erroMsgAlert = ref(undefined);
+const erroFatal = ref(false);
+const isLoadingBotaoSinalizar = ref(false);
+const isLoadingBotaoConfirmar = ref(false);
+const erroMsg = ref(undefined);
 const dados = ref({ 
   tipoChave: 'cpf', 
   chave: '', 
@@ -255,7 +294,6 @@ const placeholderSelector = computed(() => {
   return map[dados.value.tipoChave];
 });
 
-// LÓGICA DO DINHEIRO (MANUAL PARA PRECISÃO)
 const valorExibido = computed(() => {
   if (dados.value.valor === 0) return "0,00";
   return (dados.value.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -271,7 +309,6 @@ const handleValorInput = (event) => {
 const inputWidth = computed(() => `${valorExibido.value.length * 22 + 20}px`);
 const formatarMoedaFinal = (val) => (val / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// NAVEGAÇÃO
 const tituloStep = computed(() => {
   const titulos = { 1: 'Transferir', 2: 'Dados de envio', 3: 'Qual o valor?', 4: 'Confirmar' };
   return titulos[step.value] || '';
@@ -293,29 +330,16 @@ const iniciarTedDireto = (contato) => {
   step.value = 3; 
 };
 
-const formatarTipo = (tipo) => {
-  let tipoformatado;
+const formatarTipo = (tipo) => isEntrada(tipo) ? '+' : '-'
 
-  if (tipo.includes('ENVIADO') || tipo.includes('ENVIADA')) {
-    tipoformatado = '-'
-  } else {
-    tipoformatado = '+'
-  };
+const isEntrada = (tipo) => tipo === 'DEPOSITO' || tipo.endsWith('_RECEBIDO') || tipo.endsWith('_RECEBIDA');
 
-  return tipoformatado;
-}
+const getNomeExibicao = (item) => {
+  if (item.tipo === 'SAQUE') return 'Saque Caixa Eletrônico';
+  if (item.tipo === 'DEPOSITO') return 'Depósito Recebido';
 
-const isEntrada = (tipo) => {
-  let entrada;
-
-  if (tipo.includes('ENVIADO') || tipo.includes('ENVIADA')) {
-    entrada = false
-  } else {
-    entrada = true
-  };
-
-  return entrada;
-}
+  return isEntrada(item.tipo) ? (item.remetente_nome || 'Maze User') : (item.recebedor_nome || 'Maze User');
+};
 
 const formatarData = (dataString) => {
   if (!dataString) return "";
@@ -342,10 +366,7 @@ const formatarData = (dataString) => {
 
 const resetarFluxoCompleto = () => {
   offcanvasBS?.hide();
-  setTimeout(() => { 
-    step.value = 1; 
-    dados.value = { tipoChave: 'cpf', chave: '', agencia: '', conta: '', valor: 0, nome: '' }; 
-  }, 400);
+  router.push({name: 'Login'})
 };
 
 onMounted(async () => {
@@ -356,40 +377,48 @@ onMounted(async () => {
   if (el) offcanvasBS = new Offcanvas(el);
 });
 
+const recarregar = async () => {
+  erroFatal.value = false;
+  await pegarContatos();
+  await pegarTransferencias();
+};
+
 async function pegarContatos() {
   try {
     const response = await transactions.contatos();
-    console.log(response);
-    contatos.value = response
-    console.log(contatos.value);
+    contatos.value = response.data
   } catch (error) {
-    console.error("Erro ao buscar contatos:", error);
+    erroMsg.value = error.response?.data?.message || undefined;
+    erroFatal.value = true;
   }
 }
 
 async function pegarTransferencias() {
   try {
     const response = await transactions.resumo();
-    ultimasTransferencias.value = response.map((transferencias) => {
+    ultimasTransferencias.value = response.data.map((transferencias) => {
+      const nome = transferencias.tipo == 'SAQUE' ? '' : transferencias.recebedor_nome
        return {
-        nome: transferencias.recebedor_nome, 
+        nome: getNomeExibicao(transferencias), 
         valor: `${formatarTipo(transferencias.tipo)} R$ ${(transferencias.valor/100).toFixed(2)}`, 
         data: formatarData(transferencias.data),
-        tipo: isEntrada(transferencias.tipo),
+        is_entrada: isEntrada(transferencias.tipo),
        }
     })
   } catch (error) {
-    console.error("Erro ao buscar Transferencias:", error);
+    erroMsg.value = error.response?.data?.message || undefined;
+    erroFatal.value = true;
   }
 }
 
 async function sinalizar() {
+  isLoadingBotaoSinalizar.value = true;
   if(dados.value.agencia != '' && dados.value.conta != '') {
     await ted();
   }  else {
     await pix();
   };
-  proximoStep();
+  isLoadingBotaoSinalizar.value = false;
 }
 
 
@@ -401,9 +430,11 @@ async function ted() {
       conta: dados.value.conta,
     }
     const response = await transactions.ted(payload);
-    dadosConfirmar.value = response
+    dadosConfirmar.value = response.data
+    proximoStep();
   } catch (error) {
-    console.error("Erro ao buscar contatos:", error);
+    erroMsgAlert.value = error.response?.data?.message || undefined;
+    mostrarErro.value = true;
   }
 }
 
@@ -415,23 +446,27 @@ async function pix() {
       tipo_chave: dados.value.tipoChave,
     }
     const response = await transactions.pix(payload);
-    dadosConfirmar.value = response
+    dadosConfirmar.value = response.data
+    proximoStep();
   } catch (error) {
-    console.error("Erro ao buscar contatos:", error);
+    erroMsgAlert.value = error.response?.data?.message || undefined;
+    mostrarErro.value = true;
   }
 }
 
 async function processarPagamento() {
+  isLoadingBotaoConfirmar.value = true;
   try {
     const payload = {
       id_transferencia: dadosConfirmar.value.id_transferencia,
     }
+
     const response = await transactions.confirmar(payload);
-    console.log(response)
     step.value = 'sucesso';
   } catch (error) {
-    console.error("Erro ao buscar contatos:", error);
     step.value = 'erro';
+  } finally {
+    isLoadingBotaoConfirmar.value = false;
   }
 };
 

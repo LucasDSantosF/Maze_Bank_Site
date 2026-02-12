@@ -57,7 +57,7 @@
               </div>
               <div class="text-start">
                 <p class="m-0 fw-bold small text-dark">{{ getNomeExibicao(item) }}</p>
-                <p class="m-0 text-muted extra-small">{{ formatarDataAmigavel(item.data) }} • {{ formatarCategoria(item.tipo) }}</p>
+                <p class="m-0 text-muted extra-small">{{ formatarData(item.data) }} • {{ formatarCategoria(item.tipo) }}</p>
               </div>
             </div>
             <span :class="['fw-bold', isEntrada(item.tipo) ? 'text-success' : 'text-dark']">
@@ -98,16 +98,25 @@
       </div>
     </div>
   </div>
+
+  <ErrorModal 
+    v-if="erroFatal" 
+    :erroMsg="erroMsg" 
+    @retry="recarregar" 
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas, Modal } from 'bootstrap';
 import { transactions } from '../../api/models/apis';
+import ErrorModal from './ErrorModal.vue';
 
 let offcanvasBS = null;
 let modalBS = null;
 
+const erroFatal = ref(false);
+const erroMsg = ref(undefined);
 const carregando = ref(false);
 const filtroAtivo = ref('todos');
 const periodo = ref({ inicio: '', fim: '' });
@@ -127,7 +136,12 @@ onMounted(async () => {
   await carregarExtrato();
 });
 
-const isEntrada = (tipo) => tipo === 'DEPOSITO' || tipo.endsWith('_RECEBIDO');
+const recarregar = async () => {
+  erroFatal.value = false;
+  await carregarExtrato();
+};
+
+const isEntrada = (tipo) => tipo === 'DEPOSITO' || tipo.endsWith('_RECEBIDO') || tipo.endsWith('_RECEBIDA');
 
 const getNomeExibicao = (item) => {
   if (item.tipo === 'SAQUE') return 'Saque Caixa Eletrônico';
@@ -151,9 +165,11 @@ const carregarExtrato = async () => {
       data_inicio: periodo.value.inicio ? `${periodo.value.inicio}T00:00:00` : null,
       data_fim: periodo.value.fim ? `${periodo.value.fim}T23:59:59` : null
     };
-    transacoes.value = await transactions.extrato(filtros);
+    const response = await transactions.extrato(filtros)
+    transacoes.value = response.data;
   } catch (e) {
-    console.error(e);
+    erroMsg.value = error.response?.data?.message || undefined;
+    erroFatal.value = true;
   } finally {
     carregando.value = false;
   }
@@ -191,7 +207,7 @@ const formatarMoeda = (val) => {
   return real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
-const formatarDataAmigavel = (dataString) => {
+const formatarData = (dataString) => {
   if (!dataString) return "";
   const d = new Date(dataString);
   const hoje = new Date();
@@ -199,11 +215,6 @@ const formatarDataAmigavel = (dataString) => {
   hoje.setDate(hoje.getDate() - 1);
   if (d.toDateString() === hoje.toDateString()) return "Ontem";
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
-};
-
-const limparDatas = () => {
-  periodo.value = { inicio: '', fim: '' };
-  carregarExtrato();
 };
 
 defineExpose({ abrirExtrato: () => offcanvasBS.show() });

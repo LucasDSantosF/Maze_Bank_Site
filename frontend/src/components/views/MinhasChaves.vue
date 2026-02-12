@@ -8,6 +8,12 @@
     </div>
 
     <div class="offcanvas-body bg-light">
+      <ErrorAlert
+        v-if="mostrarErro"
+        :mensagem="erroMsgAlert"
+        @close="mostrarErro = false"
+      />
+
       <div class="mb-4">
         <button class="btn btn-danger w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-4 shadow-sm" 
                 data-bs-toggle="modal" data-bs-target="#modalNovaChave">
@@ -88,7 +94,18 @@
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-light p-3 flex-grow-1 fw-bold" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger p-3 flex-grow-1 fw-bold" @click="salvarChave">Salvar</button>
+          <button 
+            type="button" 
+            class="btn btn-danger p-3 flex-grow-1 fw-bold" 
+            @click="salvarChave"
+            :disabled="isLoadingBotaoSalva">
+            <span 
+                v-if="isLoadingBotaoSalva" 
+                class="spinner-border spinner-border-sm me-2" 
+                role="status" 
+            />
+            <span>Salvar</span>
+          </button>
         </div>
       </div>
     </div>
@@ -105,30 +122,54 @@
           <p class="text-muted small">Essa ação removerá a chave permanentemente da sua conta Maze Bank.</p>
           <div class="d-flex gap-2 mt-4">
             <button class="btn btn-light w-100 fw-bold" data-bs-dismiss="modal">Não</button>
-            <button class="btn btn-danger w-100 fw-bold" @click="confirmarExclusao">Sim, Excluir</button>
+            <button 
+              class="btn btn-danger w-100 fw-bold" 
+              @click="confirmarExclusao"
+              :disabled="isLoadingBotaoExcluir">
+              <span 
+                  v-if="isLoadingBotaoExcluir" 
+                  class="spinner-border spinner-border-sm me-2" 
+                  role="status" 
+              />
+              <span>Sim, Excluir</span>
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <ErrorModal 
+    v-if="erroFatal" 
+    :erroMsg="erroMsg" 
+    @retry="recarregar" 
+  />
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router';
 import { ref, computed, onMounted } from 'vue';
 import { Offcanvas, Modal } from 'bootstrap';
 import { pix } from '../../api/models/apis';
+import ErrorModal from './ErrorModal.vue';
+import ErrorAlert from '../Alert/ErrorAlert.vue';
 
-// ESTADOS REATIVOS
+const router = useRouter();
+
 const chaves = ref([]);
 
 const novaChave = ref({ tipo: 'CPF', valor: '' });
 const chaveParaExcluir = ref(null);
+const mostrarErro = ref(false);
+const isLoadingBotaoSalva = ref(false);
+const isLoadingBotaoExcluir = ref(false);
+const erroMsgAlert = ref(undefined);
+const erroFatal = ref(false);
+const erroMsg = ref(undefined);
 
-// REFERÊNCIAS DO BOOTSTRAP
 let chavesOffcanvas = null;
 let modalExcluirBS = null;
 
-// LÓGICA DE MÁSCARAS E PLACEHOLDERS
 const maskSelector = computed(() => {
   if (novaChave.value.tipo === 'CPF') return '###.###.###-##';
   if (novaChave.value.tipo === 'Celular') return '(##) #####-####';
@@ -145,7 +186,6 @@ const placeholderSelector = computed(() => {
   return map[novaChave.value.tipo];
 });
 
-// INICIALIZAÇÃO DOS COMPONENTES JS
 onMounted(async () => {
   await pegarChaves();
 
@@ -159,13 +199,18 @@ onMounted(async () => {
 async function pegarChaves() {
   try {
     const response = await pix.chaves();
-    chaves.value = response
+    chaves.value = response.data
   } catch (error) {
-    console.error("Erro ao buscar chaves:", error);
+    erroMsg.value = error.response?.data?.message || undefined;
+    erroFatal.value = true;
   }
 }
 
-// FUNÇÕES DE AÇÃO
+const recarregar = async () => {
+  erroFatal.value = false;
+  await pegarChaves();
+};
+
 const abrirChaves = () => chavesOffcanvas?.show();
 
 const copiarChave = (valor) => {
@@ -179,6 +224,7 @@ const salvarChave = async () => {
   }
 
   if (novaChave.value.valor) {
+    isLoadingBotaoSalva.value = true;
     try {
       const payload = {
         valor: novaChave.value.valor,
@@ -188,15 +234,17 @@ const salvarChave = async () => {
       const response = await pix.chave(payload);
       console.log(response)
       document.getElementById('closeModalCadastro').click();
+      router.push({name: 'Login'})
     } catch (error) {
       console.error("Erro ao buscar chaves:", error);
-    } finally{}
+    } finally{
+      isLoadingBotaoSalva.value = false;
+    }
   } else {
     alert('Por favor, preencha o valor da chave.');
   }
 };
 
-// CONTROLE DE EXCLUSÃO
 const prepararExclusao = (chave) => {
   chaveParaExcluir.value = chave;
   modalExcluirBS.show();
@@ -204,20 +252,24 @@ const prepararExclusao = (chave) => {
 
 const confirmarExclusao = async () => {
   if (chaveParaExcluir.value !== null) {
+    isLoadingBotaoExcluir.value = true;
     try {
     const payload = { 
       valor: chaveParaExcluir.value 
     }
-    console.log(payload)
       const response = await pix.excluir(payload);
       chaves.value = response
+      
+      router.push({name: 'Login'})
     } catch (error) {
-      console.error("Erro ao excluir chave:", error);
+      erroMsgAlert.value = error.response?.data?.message || undefined;
+      mostrarErro.value = true;
+    } finally {
+      isLoadingBotaoExcluir.value = false;
     }
   }
 };
 
-// EXPOSIÇÃO PARA O PAI (HOME)
 defineExpose({ abrirChaves });
 </script>
 

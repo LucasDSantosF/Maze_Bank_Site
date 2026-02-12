@@ -30,10 +30,16 @@
           <p class="text-muted small mt-3">Saldo disponível: <span class="fw-bold">{{ saldo }}</span></p>
         </div>
 
-        <button @click="processarSaque" 
-                class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mt-auto mb-3" 
-                :disabled="!valorSaque || valorSaque <= 0">
-          Confirmar Saque
+        <button
+          @click="processarSaque" 
+          class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-lg mt-auto mb-3" 
+          :disabled="(!valorSaque || valorSaque <= 0) && isLoadingBotao">
+          <span 
+              v-if="isLoadingBotao" 
+              class="spinner-border spinner-border-sm me-2" 
+              role="status" 
+          />
+          <span>Confirmar Saque</span>
         </button>
       </div>
 
@@ -54,7 +60,7 @@
           <i class="bi bi-x-lg display-1"></i>
         </div>
         <h3 class="fw-bold text-dark">Saque Recusado</h3>
-        <p class="text-muted">Infelizmente você não possui saldo suficiente para realizar esta operação ou excedeu seu limite diário.</p>
+        <p class="text-muted">Infelizmente você não possui realizar o sauque. {{ undefined }}.</p>
         
         <div class="w-100 mt-5 d-flex flex-column gap-2">
           <button @click="step = 1" class="btn btn-danger w-100 py-3 rounded-4 fw-bold">
@@ -71,6 +77,7 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router';
 import { ref, computed, onMounted, defineProps } from 'vue';
 import { Offcanvas } from 'bootstrap';
 import { transactions } from '../../api/models/apis';
@@ -82,9 +89,13 @@ defineProps({
   },
 })
 
+const router = useRouter();
+
 let offcanvasBS = null;
 const step = ref(1);
 const valorSaque = ref(0);
+const isLoadingBotao = ref(false);
+const erroMsg = ref('');
 
 const valorExibido = computed(() => {
   if (!valorSaque.value) return '0,00';
@@ -113,26 +124,27 @@ const inputWidth = computed(() => {
 
 // LÓGICA DE PROCESSO
 const processarSaque = async () => {
+  isLoadingBotao.value = true;
   try {
     const payload = {
       valor: valorSaque.value, 
     }
-    console.log(payload)
+
     const response = await transactions.saque(payload);
-    console.log(response)
     step.value = 'sucesso';
   } catch (error) {
-    console.log(response)
+    erroMsg.value = error.response?.data?.message 
+    || 'Saldo suficiente para realizar esta operação ou excedeu seu limite diário';
+
     step.value = 'erro';
+  } finally {
+    isLoadingBotao.value = false;
   }
 };
 
 const resetarSaque = () => {
   offcanvasBS?.hide();
-  setTimeout(() => {
-    step.value = 1;
-    valorSaque.value = 0;
-  }, 400);
+  router.push({name: 'Login'})
 };
 
 onMounted(() => {
