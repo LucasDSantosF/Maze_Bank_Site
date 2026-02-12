@@ -3,9 +3,11 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from db.database import get_db
 from api.auth import get_current_user
 from models import models
+from utils.mascara import mascarar_cpf
 from schema.request import Money, TED, Pix, Confirmar
 from schema.response import BaseResponse, ConfirmacaoPagamentoSchema, ComprovanteTransferenciaSchema, ComprovantePixSchema, ErrorResponseSchema
 
@@ -45,11 +47,13 @@ def sinalizar_ted(request: TED, db: Session = Depends(get_db), user: models.Usua
         "id_transferencia": id_transf,
         "remetente": {
             "nome": f"{user.nome} {user.sobrenome}",
+            "cpf": mascarar_cpf(user.cpf),
+            "agencia": user.agencia,
             "conta": user.numero_conta
         },
         "recebedor": {
             "nome": f"{recebedor.nome} {recebedor.sobrenome}", 
-            "cpf": f"***.{recebedor.cpf[3:6]}.***-**",
+            "cpf": mascarar_cpf(recebedor.cpf),
             "agencia": recebedor.agencia,
             "conta": recebedor.numero_conta
         },
@@ -98,11 +102,11 @@ def sinalizar_pix(request: Pix, db: Session = Depends(get_db), user: models.Usua
         "id_transferencia": id_transf,
         "remetente": {
             "nome": f"{user.nome} {user.sobrenome}",
-            "cpf": f"***.{user.cpf[3:6]}.***-**"
+            "cpf": mascarar_cpf(user.cpf)
         },
         "recebedor": {
             "nome": f"{recebedor.nome} {recebedor.sobrenome}", 
-            "cpf": f"***.{recebedor.cpf[3:6]}.***-**"
+            "cpf": mascarar_cpf(recebedor.cpf)
         },
         "chave": {
             "chave": chave_db.chave, 

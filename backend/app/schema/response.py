@@ -51,8 +51,8 @@ class DadosBancariosContatoSchema(BaseModel):
     cpf: str
 
 class BaseChavePix(BaseModel):
-    chave: str
-    tipo: str
+    chave: Optional[str] = None
+    tipo: Optional[str] = None
 
 class ContatoSchema(BaseModel):
     nome: str
@@ -79,13 +79,15 @@ class ConfirmacaoPagamentoSchema(BaseModel):
 #Sinalização
 class Remetente(BaseModel):
     nome: str
-    conta: str
+    cpf: str
+    agencia: Optional[str] = None
+    conta: Optional[str] = None
 
 class Recebedor(BaseModel):
     nome: str
     cpf: str
-    agencia: str
-    conta: str
+    agencia: Optional[str] = None
+    conta: Optional[str] = None
 
 class ComprovanteTransferenciaSchema(BaseModel):
     id_transferencia: str

@@ -6,13 +6,10 @@ from datetime import datetime
 from db.database import get_db
 from api.auth import get_current_user
 from models import models
+from utils.mascara import mascarar_cpf
 from schema.response import BaseResponse, TransacaoSchema, ErrorResponseSchema
 
 router = APIRouter(prefix="/extrato", tags=["Extrato Bancário"])
-
-def mascarar_cpf(cpf: str):
-    if not cpf: return None
-    return f"{cpf[:3]}.***.***-{cpf[-2:]}"
 
 @router.get(
     "/", 
