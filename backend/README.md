@@ -53,7 +53,7 @@ backend/
 
 Certifique-se de ter o **Python 3.10 ou superior** instalado.
 
-**1. Clone o repositório:**
+### 1️⃣ Clone o repositório:**
 ```bash
    git clone [https://github.com/seu-usuario/Maze_Bank_Site.git](https://github.com/seu-usuario/Maze_Bank_Site.git)
 ```
@@ -61,22 +61,33 @@ Certifique-se de ter o **Python 3.10 ou superior** instalado.
    cd Maze_Bank_Site
 ```
 
-**2. Crie o ambiente virtual (venv):**
+### 2️⃣ Criar / ativar ambiente virtual (opcional, mas recomendado)
+```bash
+python -m venv venv
+venv/Scripts/activate  # Windows
+# ou
+source venv/bin/activate  # Linux/Mac
+```
+
+### 3️⃣ Instale as dependências:**
 
 ```Bash
-    python -m venv .venv
+pip install nome_do_pacote
 ```
-**3. Ative o ambiente virtual:**
 
-* Windows: `.venv\Scripts\activate`
-
-* Linux/Mac: `source .venv/bin/activate`
-
-**4. Instale as dependências:**
+### 4️⃣ Criar o requirements.txt
+**Para gerar um arquivo com todos os pacotes instalados atualmente no ambiente:**
+```Bash
+pip freeze > requirements.txt
+```
+### 5️⃣ Instalar pacotes de um requirements.txt
+**Se você clonar este projeto em outro computador ou servidor, instale todas as dependências com:**
 
 ```Bash
-    pip install fastapi uvicorn sqlalchemy python-dotenv python-jose[cryptography]  passlib[bcrypt]
+pip install -r requirements.txt
 ```
+---
+
 ## ⚙️ Configuração de Ambiente
 
 **Para a segurança da aplicação, as chaves não são enviadas para o repositório. Siga os passos abaixo:**
@@ -87,34 +98,33 @@ Certifique-se de ter o **Python 3.10 ou superior** instalado.
 
 * Gere uma chave secreta segura rodando o comando abaixo no terminal:
 
-```Bash
-    python -c "import secrets; print(secrets.token_hex(32))"
-```
-**Cole o resultado no campo SECRET_KEY dentro do seu novo arquivo `.env`.**
+    ```Bash
+        python -c "import secrets; print(secrets.token_hex(32))"
+    ```
+    **Cole o resultado no campo SECRET_KEY dentro do seu novo arquivo `.env`.**
 
 ## 🏁 Como Executar
 **Com o ambiente virtual ativado e as dependências instaladas, execute:**
 
 ```Bash
-    # Entre na pasta do backend (se já não estiver nela)
-    cd backend
+cd backend # Entre na pasta do backend (se já não estiver nela)
 ```
 
-# Inicie o servidor
+## Inicie o servidor
 ```Bash
     uvicorn app.main:app --reload
 ```
-**Acesse a documentação interativa em:**
+-   **Acesse a documentação interativa em:**
 
-**Swagger UI:** http://127.0.0.1:8000/docs
+    **Swagger UI:** http://127.0.0.1:8000/docs
 
-**Redoc:** http://127.0.0.1:8000/redoc
+    **Redoc:** http://127.0.0.1:8000/redoc
 
 ## 📈 Próximos Passos (Roadmap)
-* [ ] Testes Automatizados: Implementação com Pytest.
+* [ ] **Testes Automatizados: Implementação com Pytest.**
 
-* [ ] Docker: Containerização do backend e banco de dados.
+* [ ] **Docker: Containerização do backend e banco de dados.**
 
-* [ ] Redis: Cache para sinalizações de transferência temporárias.
+* [ ] **Redis: Cache para sinalizações de transferência temporárias.**
 
-* [ ] Frontend: Integração completa com a interface Next.js/React.
+* [ ] **Frontend: Integração completa com a interface Next.js/React.**
