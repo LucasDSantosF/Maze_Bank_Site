@@ -43,7 +43,7 @@
           </div>
           <div class="list-group-item px-0 py-3">
             <small class="text-muted d-block">CPF</small>
-            <span class="fw-semibold text-dark">{{ user.cpf }}</span>
+            <span class="fw-semibold text-dark">{{ formatarCPF(user.cpf) }}</span>
           </div>
           <div class="list-group-item px-0 py-3">
             <div class="row">
@@ -131,6 +131,7 @@ import { useRouter } from 'vue-router';
 import { ref, onMounted, nextTick } from 'vue';
 import { Offcanvas } from 'bootstrap';
 import { auth } from '../api/models/apis';
+import { formatarCPF } from '../utils/formatadores'
 
 import Pix from '../components/views/Pix.vue';
 import MinhasChaves from '../components/views/MinhasChaves.vue';

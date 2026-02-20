@@ -112,7 +112,8 @@ cd backend # Entre na pasta do backend (se já não estiver nela)
 
 ## Inicie o servidor
 ```Bash
-    uvicorn app.main:app --reload
+cd app
+uvicorn main:app --reload
 ```
 -   **Acesse a documentação interativa em:**
 
