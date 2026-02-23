@@ -13,7 +13,7 @@ Maze_Bank_Site/
 └── frontend/   # Interface do usuário construída com Vue 3 e Vite
 ```
 <img width="450" height="450" src="https://github.com/user-attachments/assets/18a1b20f-87cc-49ff-a956-9c1b44aae6df" />
-<img width="450" height="450" src="https://github.com/user-attachments/assets/404dbf67-78e1-4289-94aa-537bc8802166" />
+<img width="450" height="450" src="" />
 
 ## 🛠️ Tecnologias Utilizadas
 
